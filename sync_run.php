@@ -36,7 +36,7 @@ while(true){
         
         $params = json_decode($syncitem);
         
-        import_phpfina(
+        $lastvalue = import_phpfina(
             $feed_settings['phpfina']['datadir'],
             $params->local_id,
             $params->remote_server,
@@ -44,7 +44,9 @@ while(true){
             $params->remote_apikey
         );
         
-        // process($syncitem);
+        // $lastvalue = $this->EngineClass($engine)->lastvalue($id);
+        $redis->hMset("feed:".$params->local_id, array('time' => $lastvalue['time'],'value' => $lastvalue['value']));
+
     } else {
         break;
     }

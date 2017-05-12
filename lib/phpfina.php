@@ -119,6 +119,16 @@ function import_phpfina($local_datadir,$local_id,$remote_server,$remote_id,$remo
 
     fclose($backup);
     fclose($primary);
-
+    
+    // Last time and value
+    $d = substr($data,strlen($data)-4,4);
+    $val = unpack("f",$d);
+    
+    clearstatcache($local_datadir.$local_id.".dat");
+    $npoints = floor(filesize($local_datadir.$local_id.".dat")/4);
+    $time = $local_meta->start_time + ($local_meta->interval * $npoints);
+    
     echo "--downloaded: ".$dnsize." bytes\n";
+    
+    return array("time"=>$time, "value"=>$val[1]);
 }
