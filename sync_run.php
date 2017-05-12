@@ -36,16 +36,27 @@ while(true){
         
         $params = json_decode($syncitem);
         
-        $lastvalue = import_phpfina(
-            $feed_settings['phpfina']['datadir'],
-            $params->local_id,
-            $params->remote_server,
-            $params->remote_id,
-            $params->remote_apikey
-        );
+        if ($params->action=="download") {
+            $lastvalue = import_phpfina(
+                $feed_settings['phpfina']['datadir'],
+                $params->local_id,
+                $params->remote_server,
+                $params->remote_id,
+                $params->remote_apikey
+            );
+            $redis->hMset("feed:".$params->local_id, array('time' => $lastvalue['time'],'value' => $lastvalue['value']));
+        }
         
-        // $lastvalue = $this->EngineClass($engine)->lastvalue($id);
-        $redis->hMset("feed:".$params->local_id, array('time' => $lastvalue['time'],'value' => $lastvalue['value']));
+        if ($params->action=="upload") {
+            upload(
+                $feed_settings['phpfina']['datadir'],
+                $params->local_id,
+                $params->remote_server,
+                $params->remote_id,
+                $params->remote_apikey
+            );
+        }
+        
 
     } else {
         break;

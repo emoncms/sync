@@ -132,3 +132,78 @@ function import_phpfina($local_datadir,$local_id,$remote_server,$remote_id,$remo
     
     return array("time"=>$time, "value"=>$val[1]);
 }
+
+function upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apikey)
+{
+    // Read local feed meta file
+    if (!$meta = get_meta($local_dir,$local_feed)) {
+        print "ERROR: Could not open local feed.meta file\n";
+        return false;
+    }
+    $start = $meta->start_time;
+    $interval = $meta->interval;
+
+    // Calculate size of file to upload in number of datapoints
+    $start_pos = floor(($start - $meta->start_time)/$meta->interval);
+    $npoints = floor(filesize($local_dir.$local_feed.".dat")/4.0);
+    $npoints_to_upload = $npoints - $start_pos;
+    print "Upload size: ".(($npoints_to_upload*4)/1024)."kb\n";
+
+    // Calculate number of blocks
+    $blocksize = round((1024*512) / 4); // 100kb blocks
+    $blocknum = ceil($npoints_to_upload / $blocksize);
+    print "Number of blocks: $blocknum\n";
+
+    // Open local feed data file
+    $n=0;
+    $fh = fopen($local_dir.$local_feed.".dat", 'rb');
+    for ($block=0; $block<$blocknum; $block++) {
+        
+        // Seek to block start position and read block
+        $pos = floor(($start - $meta->start_time)/$meta->interval);
+        fseek($fh,$pos*4);
+        $data = fread($fh,$blocksize*4);
+        $actualblocksize = floor(strlen($data) / 4.0);
+        
+        // Send the data block
+        $result = request("$remote_host/feed/upload.json?id=$remote_feedid&start=$start&interval=$interval&npoints=$actualblocksize&apikey=$remote_apikey",$data);
+        
+        // Print result
+        $upload_size = round(($actualblocksize*4)/1024);
+        print "$n $upload_size"."kb upload: $result\n"; 
+        
+        // Advance next position
+        $start += $actualblocksize * $interval;
+        $n++;
+    }
+
+}
+
+function get_meta($dir,$id)
+{
+    $meta = new stdClass();
+    if (!$metafile = fopen($dir.$id.".meta", 'rb')) return false;
+    fseek($metafile,8);
+    $tmp = unpack("I",fread($metafile,4)); 
+    $meta->interval = $tmp[1];
+    $tmp = unpack("I",fread($metafile,4)); 
+    $meta->start_time = $tmp[1];
+    fclose($metafile);
+    return $meta;
+}
+
+function request($url,$data)
+{
+    $curl = curl_init($url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT,5);
+    curl_setopt($curl, CURLOPT_TIMEOUT,10);
+
+    $curl_response = curl_exec($curl);
+    curl_close($curl);
+
+    return $curl_response;
+}

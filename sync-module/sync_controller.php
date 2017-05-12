@@ -121,6 +121,7 @@ function sync_controller()
             $remote = $sync->remote_load($session["userid"]);
             
             $params = array(
+                "action"=>"download",
                 "local_id"=>$local_id,
                 "remote_server"=>$remote->host,
                 "remote_id"=>$remote_id,
@@ -141,7 +142,7 @@ function sync_controller()
         
         $name = $_GET['name'];
         $tag = $_GET['tag'];
-        $localid = (int) $_GET['localid'];
+        $local_id = (int) $_GET['localid'];
         $interval = (int) $_GET['interval'];
         
         $remote = $sync->remote_load($session["userid"]);
@@ -154,8 +155,21 @@ function sync_controller()
         $url .= "&engine=".Engine::PHPFINA;
         $url .= "&options=".json_encode(array("interval"=>$interval));
 
-        $result = file_get_contents($url);
-        $sync->trigger_service($homedir);
+        $result = json_decode(file_get_contents($url));
+        if ($result->success) {
+            $remote_id = $result->feedid;
+        
+            $params = array(
+                "action"=>"upload",
+                "local_id"=>$local_id,
+                "remote_server"=>$remote->host,
+                "remote_id"=>$remote_id,
+                "remote_apikey"=>$remote->apikey_write
+            );
+            $redis->lpush("sync-queue",json_encode($params));
+                
+            $sync->trigger_service($homedir);
+        }
     }
     
     return array('content'=>$result, 'fullwidth'=>true);
