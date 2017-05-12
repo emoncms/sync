@@ -46,7 +46,7 @@ while(true){
         
         // process($syncitem);
     } else {
-        // break;
+        break;
     }
     sleep(1);
 }

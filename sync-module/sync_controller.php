@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function sync_controller()
 {
-    global $path,$session,$route,$mysqli,$redis,$user,$feed_settings;
+    global $homedir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings;
 
     $result = false;
 
@@ -112,17 +112,28 @@ function sync_controller()
         $remote_id = (int) $_GET['remoteid'];
         $interval = (int) $_GET['interval'];
         
-        $result = $feed->create($session['userid'],$tag,$name,DataType::REALTIME,Engine::PHPFINA,json_decode(json_encode(array("interval"=>$interval))));
+        if (!$local_id = $feed->get_id($session["userid"],$name)) {
+            $result = $feed->create($session['userid'],$tag,$name,DataType::REALTIME,Engine::PHPFINA,json_decode(json_encode(array("interval"=>$interval))));
+            $local_id = $result["feedid"];
+        }
         
-        $remote = $sync->remote_load($session["userid"]);
+        if ($local_id) {
+            $remote = $sync->remote_load($session["userid"]);
+            
+            $params = array(
+                "local_id"=>$local_id,
+                "remote_server"=>$remote->host,
+                "remote_id"=>$remote_id,
+                "remote_apikey"=>$remote->apikey_write
+            );
+            $redis->lpush("sync-queue",json_encode($params));
+            $sync->trigger_service($homedir);
+            
+            $result = array("success"=>true);
+        } else {
+            $result = array("success"=>false);
+        }
         
-        $params = array(
-            "local_id"=>$result["feedid"],
-            "remote_server"=>$remote->host,
-            "remote_id"=>$remote_id,
-            "remote_apikey"=>$remote->apikey_write
-        );
-        $redis->lpush("sync-queue",json_encode($params));
     }
     
     if ($route->action == "upload" && $session["write"]) {
@@ -144,7 +155,10 @@ function sync_controller()
         $url .= "&options=".json_encode(array("interval"=>$interval));
 
         $result = file_get_contents($url);
+        $sync->trigger_service($homedir);
     }
     
     return array('content'=>$result, 'fullwidth'=>true);
 }
+
+
