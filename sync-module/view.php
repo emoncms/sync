@@ -36,7 +36,12 @@ $.ajax({ url: path+"sync/remote-load", dataType: 'json', async: false, success: 
     if (result.success!=undefined && !result.success) remote=false; else remote=result;
 }});
 
-if (remote) {
+if (remote) sync_list();
+
+setInterval(sync_list,10000);
+
+function sync_list()
+{
     $("#remote-host").val(remote.host);
     $("#remote-username").val(remote.username);
 
@@ -79,9 +84,13 @@ if (remote) {
             feedlocation = "Both";   
             if (feeds[name].local.npoints>feeds[name].remote.npoints) {
                 status = "Local ahead of Remote by "+(feeds[name].local.npoints-feeds[name].remote.npoints)+" points";
-            } else {
+                action = "<button class='btn upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
+            } else if (feeds[name].local.npoints<feeds[name].remote.npoints) {
                 status = "Local behind Remote by "+(feeds[name].remote.npoints-feeds[name].local.npoints)+" points";
                 action = "<button class='btn download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
+            } else {
+                status = "Local and Remote are the same";
+                action = "";
             }
             
             start_time = feeds[name].local.start_time;
@@ -118,7 +127,10 @@ $("#remote-save").click(function(){
         async: true, 
         success: function(result){
             if (result.success) {
+                remote = result;
                 // feed list scan
+                sync_list();
+                
             } else {
                 alert(result.message);
             }
@@ -138,7 +150,7 @@ $("#select-none").click(function(){
     });
 });
 
-$(".download").click(function(){
+$("#feeds").on("click",".download",function(){
     var name = $(this).attr("name");
     $.ajax({
         url: path+"sync/download", 
@@ -153,7 +165,7 @@ $(".download").click(function(){
     });
 });
 
-$(".upload").click(function(){
+$("#feeds").on("click",".upload",function(){
     var name = $(this).attr("name");
     $.ajax({
         url: path+"sync/upload", 

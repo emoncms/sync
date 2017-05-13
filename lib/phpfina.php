@@ -143,8 +143,24 @@ function upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apike
     $start = $meta->start_time;
     $interval = $meta->interval;
 
+    // Download remote feed meta data
+    $remote_meta = json_decode(file_get_contents($remote_host."/feed/getmeta.json?apikey=$remote_apikey&id=".$remote_feedid));
+    
+    if ($remote_meta==false || !isset($remote_meta->start_time) || !isset($remote_meta->interval) || !isset($remote_meta->npoints)) {
+        echo "ERROR: Invalid remote meta, returned false\n";
+        echo json_encode($remote_meta)."\n";
+        return false;
+    }
+    
+    $start = $remote_meta->start_time + ($remote_meta->interval * $remote_meta->npoints);
+
     // Calculate size of file to upload in number of datapoints
     $start_pos = floor(($start - $meta->start_time)/$meta->interval);
+    if ($start_pos<0) { 
+        $start_pos = 0;
+        $start = $meta->start_time;
+    }
+    
     $npoints = floor(filesize($local_dir.$local_feed.".dat")/4.0);
     $npoints_to_upload = $npoints - $start_pos;
     print "Upload size: ".(($npoints_to_upload*4)/1024)."kb\n";
@@ -171,6 +187,9 @@ function upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apike
         // Print result
         $upload_size = round(($actualblocksize*4)/1024);
         print "$n $upload_size"."kb upload: $result\n"; 
+        
+        // Exit if upload fails (Extend here to attempt retry??)
+        if ($result===false || $result==="false") break;
         
         // Advance next position
         $start += $actualblocksize * $interval;

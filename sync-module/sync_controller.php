@@ -147,29 +147,39 @@ function sync_controller()
         
         $remote = $sync->remote_load($session["userid"]);
         
-        $url = $remote->host."/feed/create.json?";
-        $url .= "apikey=".$remote->apikey_write;
-        $url .= "&name=".urlencode($name);
-        $url .= "&tag=".urlencode($tag);
-        $url .= "&datatype=".DataType::REALTIME;
-        $url .= "&engine=".Engine::PHPFINA;
-        $url .= "&options=".json_encode(array("interval"=>$interval));
-
-        $result = json_decode(file_get_contents($url));
-        if ($result->success) {
-            $remote_id = $result->feedid;
+        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&name=".$name);
         
-            $params = array(
-                "action"=>"upload",
-                "local_id"=>$local_id,
-                "remote_server"=>$remote->host,
-                "remote_id"=>$remote_id,
-                "remote_apikey"=>$remote->apikey_write
-            );
-            $redis->lpush("sync-queue",json_encode($params));
-                
-            $sync->trigger_service($homedir);
+        if (!$remote_id) {
+            print "creating feed";
+        
+            $url = $remote->host."/feed/create.json?";
+            $url .= "apikey=".$remote->apikey_write;
+            $url .= "&name=".urlencode($name);
+            $url .= "&tag=".urlencode($tag);
+            $url .= "&datatype=".DataType::REALTIME;
+            $url .= "&engine=".Engine::PHPFINA;
+            $url .= "&options=".json_encode(array("interval"=>$interval));
+
+            $result = json_decode(file_get_contents($url));
+            if ($result->success) {
+                $remote_id = $result->feedid;
+            }
+            
+            print $remote_id;
         }
+        usleep(100);
+        
+        $params = array(
+            "action"=>"upload",
+            "local_id"=>$local_id,
+            "remote_server"=>$remote->host,
+            "remote_id"=>$remote_id,
+            "remote_apikey"=>$remote->apikey_write
+        );
+        $redis->lpush("sync-queue",json_encode($params));
+            
+        $sync->trigger_service($homedir);
+        $result = array("success"=>true);
     }
     
     return array('content'=>$result, 'fullwidth'=>true);

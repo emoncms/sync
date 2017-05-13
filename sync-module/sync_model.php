@@ -61,7 +61,7 @@ class Sync
                 $stmt->bind_param("ssssi",$host,$username,$apikey_read,$apikey_write,$userid);
                 if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli insert");
             }
-            return array("success"=>true, "apikey_read"=>$apikey_read, "apikey_write"=>$apikey_write);
+            return array("success"=>true, "host"=>$host, "username"=>$username, "apikey_read"=>$apikey_read, "apikey_write"=>$apikey_write, "userid"=>$userid);
         } else {
             return array("success"=>false, "message"=>"Authentication failure, username or password incorrect");
         }
