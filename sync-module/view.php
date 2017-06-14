@@ -12,8 +12,13 @@
 <h2>SYNC</h2>
 
 Select: <button id="select-all" class="btn">All</button><button id="select-none" class="btn">None</button>
-<br>
-<table class="table">
+<br><br>
+
+<div class="alert alert-info">
+
+</div>
+
+<table id="sync-table" class="table hide">
     <tr><th></th><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
     <tbody id="feeds"></tbody>
 </table>
@@ -31,20 +36,26 @@ var path = "<?php echo $path; ?>";
 var remote = false;
 var feeds = [];
 
+$(".alert").show().html("Connecting to remote emoncms server...");
 // Load remote details
 $.ajax({ url: path+"sync/remote-load", dataType: 'json', async: false, success: function(result){
     if (result.success!=undefined && !result.success) remote=false; else remote=result;
 }});
 
-if (remote) sync_list();
+$("#remote-host").val(remote.host);
+$("#remote-username").val(remote.username);
+
+if (remote) {
+    $("#sync-table").show();
+    sync_list();
+}
 
 setInterval(sync_list,10000);
 
 function sync_list()
 {
-    $("#remote-host").val(remote.host);
-    $("#remote-username").val(remote.username);
 
+    $(".alert").html("Connected. Fetching emoncms feeds...");
     $.ajax({ url: path+"sync/feed-list", dataType: 'json', async: false, success: function(result){
         feeds = result;
     }});
@@ -102,7 +113,7 @@ function sync_list()
         out += "<td>"+timeConverter(start_time)+"</td>";
         out += "<td>"+interval+"s</td>";
         
-        out += "<td>"+status+"</td>";
+        out += "<td class='status' name='"+name+"'>"+status+"</td>";
         
         //out += "<td>"+feeds[name].local.start_time+":"+feeds[name].local.interval+":"+feeds[name].local.npoints+"</td>";
         out += "<td>"+action+"</td>";
@@ -112,12 +123,16 @@ function sync_list()
         out += "</tr>";
     }
     $("#feeds").html(out);
+    $(".alert").hide();
 }
 
 $("#remote-save").click(function(){
     var host = $("#remote-host").val();
     var username = $("#remote-username").val();
     var password = $("#remote-password").val();
+    
+    $("#sync-table").hide();
+    $(".alert").show().html("Connecting to remote emoncms server...");
     
     $.ajax({ 
         type: "POST",
@@ -127,6 +142,7 @@ $("#remote-save").click(function(){
         async: true, 
         success: function(result){
             if (result.success) {
+                $("#sync-table").show();
                 remote = result;
                 // feed list scan
                 sync_list();
@@ -159,6 +175,7 @@ $("#feeds").on("click",".download",function(){
         async: true, 
         success: function(result){
             if (result.success) {
+                $(".status[name='"+name+"']").html("Downloading...");
                 // success
             } else alert(result.message);
         } 
