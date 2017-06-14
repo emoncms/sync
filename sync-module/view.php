@@ -14,6 +14,7 @@
 Select: <button id="select-all" class="btn">All</button><button id="select-none" class="btn">None</button>
 <br><br>
 
+
 <div class="alert alert-info">
 
 </div>
@@ -23,6 +24,7 @@ Select: <button id="select-all" class="btn">All</button><button id="select-none"
     <tbody id="feeds"></tbody>
 </table>
 
+<div id="time"></div>
 
 <h3>Remote</h3>
 <p>Host<br><input id="remote-host" type="text" value="http://localhost/master"></p>
@@ -54,6 +56,7 @@ setInterval(sync_list,10000);
 
 function sync_list()
 {
+    next_update = 10;
 
     $(".alert").html("Connected. Fetching emoncms feeds...");
     $.ajax({ url: path+"sync/feed-list", dataType: 'json', async: false, success: function(result){
@@ -168,6 +171,7 @@ $("#select-none").click(function(){
 
 $("#feeds").on("click",".download",function(){
     var name = $(this).attr("name");
+    $(".status[name='"+name+"']").html("Downloading...");
     $.ajax({
         url: path+"sync/download", 
         data: "name="+name+"&tag="+feeds[name].remote.tag+"&remoteid="+feeds[name].remote.id+"&interval="+feeds[name].remote.interval,
@@ -175,15 +179,18 @@ $("#feeds").on("click",".download",function(){
         async: true, 
         success: function(result){
             if (result.success) {
-                $(".status[name='"+name+"']").html("Downloading...");
                 // success
-            } else alert(result.message);
+            } else { 
+                alert(result.message); 
+                $(".status[name='"+name+"']").html("");
+            }
         } 
     });
 });
 
 $("#feeds").on("click",".upload",function(){
     var name = $(this).attr("name");
+    $(".status[name='"+name+"']").html("Uploading...");
     $.ajax({
         url: path+"sync/upload", 
         data: "name="+name+"&tag="+feeds[name].local.tag+"&localid="+feeds[name].local.id+"&interval="+feeds[name].local.interval,
@@ -192,7 +199,10 @@ $("#feeds").on("click",".upload",function(){
         success: function(result){
             if (result.success) {
                 // success
-            } else alert(result.message);
+            } else { 
+                alert(result.message); 
+                $(".status[name='"+name+"']").html("");
+            }
         } 
     });
 });
@@ -215,5 +225,10 @@ function timeConverter(UNIX_timestamp){
   return time;
 }
 
+setInterval(ticker,1000);
 
+function ticker() {
+    next_update --;
+    $("#time").html("Next update: "+next_update+"s");
+}
 </script>
