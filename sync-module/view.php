@@ -1,4 +1,6 @@
-<?php global $path; ?>
+<?php global $path,$redis_enabled;
+
+?>
 <style>
 .syncprogress {
     background-color:#7bc3e2;
@@ -9,10 +11,29 @@
 }
 </style>
 
-<h2>SYNC</h2>
+<h3>Emoncms Sync</h3>
 
-Select: <button id="select-all" class="btn">All</button><button id="select-none" class="btn">None</button>
-<br><br>
+<p>The module can be used to download or upload data to or from a remote emoncms installation.</p>
+<p>Start by entering the remote emoncms installation location in the <i>host</i> field (e.g https://emoncms.org). Then enter the <i>username</i> and <i>password</i> of the account you wish to link to.</p>
+<p>Download or upload specific feeds as required.</p>
+<p><b>Note:</b> Data upload is not yet enabled on emoncms.org.</p>
+<br>
+<?php if ($redis_enabled) { ?>
+
+<div class="input-prepend input-append">
+<span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
+<span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
+<span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
+<button id="remote-save" class="btn">Connect</button>
+</div>
+
+<!--
+<div class="input-prepend input-append" style="float:left">
+<span class="add-on">Select</span><button id="select-all" class="btn">All</button><button id="select-none" class="btn">None</button>
+</div>
+-->
+
+<div id="time" style="float:right; padding-top:10px; padding-right:20px">Next update: 0s</div>
 
 
 <div class="alert alert-info">
@@ -24,35 +45,36 @@ Select: <button id="select-all" class="btn">All</button><button id="select-none"
     <tbody id="feeds"></tbody>
 </table>
 
-<div id="time"></div>
+<?php } else { ?>
 
-<h3>Remote</h3>
-<p>Host<br><input id="remote-host" type="text" value="http://localhost/master"></p>
-<p>Username<br><input id="remote-username" type="text" ></p>
-<p>Password<br><input id="remote-password" type="password" ></p>
-<button id="remote-save" class="btn">Save</button>
+<div class="alert alert-warning"><b>Error:</b> Redis is not installed or enabled. Please ensure that redis is installed on your system and then enabled in settings.php.</div>
+
+<?php } ?>
 
 <script>
 
+var redis_enabled = <?php echo $redis_enabled; ?>;
 var path = "<?php echo $path; ?>";
 var remote = false;
 var feeds = [];
 
-$(".alert").show().html("Connecting to remote emoncms server...");
-// Load remote details
-$.ajax({ url: path+"sync/remote-load", dataType: 'json', async: false, success: function(result){
-    if (result.success!=undefined && !result.success) remote=false; else remote=result;
-}});
+if (redis_enabled) {
+    $(".alert").show().html("Connecting to remote emoncms server...");
+    // Load remote details
+    $.ajax({ url: path+"sync/remote-load", dataType: 'json', async: false, success: function(result){
+        if (result.success!=undefined && !result.success) remote=false; else remote=result;
+    }});
 
-$("#remote-host").val(remote.host);
-$("#remote-username").val(remote.username);
+    $("#remote-host").val(remote.host);
+    $("#remote-username").val(remote.username);
 
-if (remote) {
-    $("#sync-table").show();
-    sync_list();
+    if (remote) {
+        $("#sync-table").show();
+        sync_list();
+    }
+
+    setInterval(sync_list,10000);
 }
-
-setInterval(sync_list,10000);
 
 function sync_list()
 {
@@ -66,7 +88,7 @@ function sync_list()
     var out = "";
     for (var name in feeds) {
         out += "<tr>";
-        out += "<td><input class='feed-select-checkbox' type=checkbox></td>";
+        //out += "<td><input class='feed-select-checkbox' type=checkbox></td>";
         
         
         var feedlocation = "";
