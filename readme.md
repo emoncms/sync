@@ -2,6 +2,8 @@
 
 Download and upload feed between a local and remote emoncms server
 
+![syncmodule.png](syncmodule.png)
+
 ### EmonPi, Emonbase install
 
 Install the sync module into home folder (e.g. /home/pi) directory (rather than emoncms/Modules):
