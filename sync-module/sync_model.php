@@ -19,10 +19,12 @@ class Sync
     private $mysqli;
     private $connect_timeout = 5;
     private $total_timeout = 10;
+    private $log;
 
     public function __construct($mysqli)
     {
         $this->mysqli = $mysqli;
+        $this->log = new EmonLogger(__FILE__);
     }
     
     public function remote_load($userid)
@@ -35,6 +37,7 @@ class Sync
     
     public function remote_save($userid,$host,$username,$password) 
     {
+        $this->log->warn("remote save");
         // Input sanitisation
         $userid = (int) $userid;
         if (!$username || !$password) return array('success'=>false, 'message'=>_("Username or password empty"));
@@ -43,7 +46,11 @@ class Sync
         $username = $this->mysqli->real_escape_string($username);        
         
         // Authentication request to target server
-        $result = json_decode($this->request("POST",$host."/user/auth.json","username=$username&password=$password"));
+        $result = $this->request("POST",$host."/user/auth.json","username=$username&password=$password");
+        $this->log->warn($result);
+        $result = json_decode($result);
+        
+        
         
         // If successful, save to local sync table
         if (isset($result->success) && $result->success) {  
