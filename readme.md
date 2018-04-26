@@ -2,7 +2,7 @@
 
 Download and upload feed between a local and remote emoncms server
 
-![sync_module.png](sync_module.png)
+![syncmodule.png](syncmodule.png)
 
 ### Automatic EmonPi, Emonbase Update
 
