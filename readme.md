@@ -4,7 +4,11 @@ Download and upload feed between a local and remote emoncms server
 
 ![sync_module.png](sync_module.png)
 
-### EmonPi, Emonbase install
+### Automatic EmonPi, Emonbase Update
+
+The Sync module is included in the default EmonPi/EmonBase software stack as of 26th April 2018. If you do not see the sync module under the emoncms Setup tab try running EmonPi or EmonBase update from the Administration page on your EmonPi/EmonBase.
+
+### Manual Linux Installation
 
 Install the sync module into home folder (e.g. /home/pi) directory (rather than emoncms/Modules):
 
