@@ -10,6 +10,12 @@ The Sync module is included in the default EmonPi/EmonBase software stack as of 
 
 ### Manual Linux Installation
 
+**Note:** The sync module has hard coded paths for the emoncms directory location that point to: /var/www/emoncms. If your installation has emoncms installed in /var/www/html/emoncms you will need a symlink to /var/www/emoncms:
+
+    ln -s /var/www/html/emoncms /var/www/emoncms
+    
+The setting **$homedir** in emoncms settings.php also need to be set to reflect your system.    
+
 Install the sync module into home folder (e.g. /home/pi) directory (rather than emoncms/Modules):
 
     cd ~/
@@ -32,3 +38,14 @@ Add the service runner to crontab (enter your home directory username e.g pi):
 
     crontab -e
     * * * * * /home/username/emonpi/service-runner >> /var/log/service-runner.log 2>&1
+
+### Troubleshooting
+
+- Check that the $homedir setting is set appropriately on your emoncms installation
+- If your emoncms installation is in /var/www/html/emoncms, make a symlink to /var/www/emoncms as described above.
+
+To run the sync process manually:
+
+    cd ~/
+    cd sync
+    sudo php sync_run.php
