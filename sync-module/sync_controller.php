@@ -21,7 +21,7 @@ function sync_controller()
     
     if ($route->action == "view") {
         $route->format = "html";
-        return view("Modules/sync/view.php",array());
+        return view("Modules/sync/sync_view.php",array());
     }
     
     // 1. User enters username, password and host of remote installation

@@ -1,5 +1,7 @@
 <?php global $path,$redis_enabled;
 
+$version = 1;
+
 ?>
 <style>
 .syncprogress {
@@ -10,46 +12,70 @@
     padding:2px;
 }
 </style>
+<link rel="stylesheet" href="<?php echo $path; ?>Modules/sync/style.css">
 
-<h3>Emoncms Sync</h3>
+<div id="wrapper">
+  <div class="sidenav">
+    <div class="sidenav-inner">
+      
+      <ul class="sidenav-menu">
+          <li><a href="<?php echo $path; ?>sync/view/inputs">Inputs</a></li>
+          <li><a href="<?php echo $path; ?>sync/view/feeds">Feeds</a></li>
+          <li><a href="<?php echo $path; ?>sync/view/dashboards">Dashboards</a></li>
+          <li><a href="<?php echo $path; ?>sync/view/new"><i class="icon-plus icon-white"></i> New</a></li>
+      </ul>
+      
+    </div>
+  </div>
 
-<p>The module can be used to download or upload data to or from a remote emoncms installation.</p>
-<p>Start by entering the remote emoncms installation location in the <i>host</i> field (e.g https://emoncms.org). Then enter the <i>username</i> and <i>password</i> of the account you wish to link to.</p>
-<p>Download or upload specific feeds as required.</p>
-<p><b>Note:</b> Data upload is not yet enabled on emoncms.org.</p>
-<br>
-<?php if ($redis_enabled) { ?>
+  <div style="height:10px"></div>
 
-<div class="input-prepend input-append">
-<span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
-<span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
-<span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
-<button id="remote-save" class="btn">Connect</button>
+  <div style="padding:20px">
+
+  <h2>Emoncms Sync</h2>
+
+  <p>The module can be used to download or upload data to or from a remote emoncms installation.</p>
+  <p>Start by entering the remote emoncms installation location in the <i>host</i> field (e.g https://emoncms.org). Then enter the <i>username</i> and <i>password</i> of the account you wish to link to.</p>
+  <p>Download or upload specific feeds as required.</p>
+  <p><b>Note:</b> Data upload is not yet enabled on emoncms.org.</p>
+  <br>
+  <?php if ($redis_enabled) { ?>
+
+  <div class="input-prepend input-append">
+  <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
+  <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
+  <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
+  <button id="remote-save" class="btn">Connect</button>
+  </div>
+
+  <!--
+  <div class="input-prepend input-append" style="float:left">
+  <span class="add-on">Select</span><button id="select-all" class="btn">All</button><button id="select-none" class="btn">None</button>
+  </div>
+  -->
+
+  <div id="time" style="float:right; padding-top:10px; padding-right:20px">Next update: 0s</div>
+
+
+  <div class="alert alert-info">
+
+  </div>
+
+  <table id="sync-table" class="table hide">
+      <tr><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
+      <tbody id="feeds"></tbody>
+  </table>
+
+  <?php } else { ?>
+
+  <div class="alert alert-warning"><b>Error:</b> Redis is not installed or enabled. Please ensure that redis is installed on your system and then enabled in settings.php.</div>
+
+  <?php } ?>
+
+  </div>
 </div>
 
-<!--
-<div class="input-prepend input-append" style="float:left">
-<span class="add-on">Select</span><button id="select-all" class="btn">All</button><button id="select-none" class="btn">None</button>
-</div>
--->
-
-<div id="time" style="float:right; padding-top:10px; padding-right:20px">Next update: 0s</div>
-
-
-<div class="alert alert-info">
-
-</div>
-
-<table id="sync-table" class="table hide">
-    <tr><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
-    <tbody id="feeds"></tbody>
-</table>
-
-<?php } else { ?>
-
-<div class="alert alert-warning"><b>Error:</b> Redis is not installed or enabled. Please ensure that redis is installed on your system and then enabled in settings.php.</div>
-
-<?php } ?>
+<script type="text/javascript" src="<?php echo $path; ?>Modules/sync/sidebar.js?v=<?php echo $version; ?>"></script>
 
 <script>
 
