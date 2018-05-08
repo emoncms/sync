@@ -1,6 +1,6 @@
 <?php
 
-function import_phpfina($local_datadir,$local_id,$remote_server,$remote_id,$remote_apikey)
+function phpfina_download($local_datadir,$local_id,$remote_server,$remote_id,$remote_apikey)
 {    
     // Download phpfiwa feed meta data
     $remote_meta = json_decode(file_get_contents($remote_server."/feed/getmeta.json?apikey=$remote_apikey&id=".$remote_id));
@@ -120,20 +120,25 @@ function import_phpfina($local_datadir,$local_id,$remote_server,$remote_id,$remo
     fclose($backup);
     fclose($primary);
     
-    // Last time and value
-    $d = substr($data,strlen($data)-4,4);
-    $val = unpack("f",$d);
+    $lastvalue = false;
     
-    clearstatcache($local_datadir.$local_id.".dat");
-    $npoints = floor(filesize($local_datadir.$local_id.".dat")/4);
-    $time = $local_meta->start_time + ($local_meta->interval * $npoints);
+    if ($dnsize>0) {
+        // Last time and value
+        $d = substr($data,strlen($data)-4,4);
+        $val = unpack("f",$d);
+        
+        clearstatcache($local_datadir.$local_id.".dat");
+        $npoints = floor(filesize($local_datadir.$local_id.".dat")/4);
+        $time = $local_meta->start_time + ($local_meta->interval * $npoints);
+        $lastvalue = array("time"=>$time, "value"=>$val[1]);
+    }
     
     echo "--downloaded: ".$dnsize." bytes\n";
     
-    return array("time"=>$time, "value"=>$val[1]);
+    return $lastvalue;
 }
 
-function upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apikey)
+function phpfina_upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apikey)
 {
     // Read local feed meta file
     if (!$meta = get_meta($local_dir,$local_feed)) {

@@ -12,6 +12,7 @@ if (!isset($homedir)) $homedir = "/home/pi";
 chdir("$homedir/sync/");
 
 require "lib/phpfina.php";
+require "lib/phptimeseries.php";
 
 // Load redis
 if (!$redis_enabled) { echo "ERROR: Redis is not enabled"; die; }
@@ -35,26 +36,57 @@ while(true){
         print $syncitem."\n";
         
         $params = json_decode($syncitem);
+
+        // ----------------------------------------------------------------------------
         
         if ($params->action=="download") {
-            $lastvalue = import_phpfina(
-                $feed_settings['phpfina']['datadir'],
-                $params->local_id,
-                $params->remote_server,
-                $params->remote_id,
-                $params->remote_apikey
-            );
-            $redis->hMset("feed:".$params->local_id, array('time' => $lastvalue['time'],'value' => $lastvalue['value']));
+        
+            if ($params->engine==Engine::PHPFINA) {
+                $lastvalue = phpfina_download(
+                    $feed_settings['phpfina']['datadir'],
+                    $params->local_id,
+                    $params->remote_server,
+                    $params->remote_id,
+                    $params->remote_apikey
+                );
+            }
+            
+            if ($params->engine==Engine::PHPTIMESERIES) {
+                $lastvalue = phptimeseries_download(
+                    $feed_settings['phptimeseries']['datadir'],
+                    $params->local_id,
+                    $params->remote_server,
+                    $params->remote_id,
+                    $params->remote_apikey
+                );
+            }
+            
+            if ($lastvalue) $redis->hMset("feed:".$params->local_id, $lastvalue);
         }
         
+        // ----------------------------------------------------------------------------
+        
         if ($params->action=="upload") {
-            upload(
-                $feed_settings['phpfina']['datadir'],
-                $params->local_id,
-                $params->remote_server,
-                $params->remote_id,
-                $params->remote_apikey
-            );
+
+            if ($params->engine==Engine::PHPFINA) {
+                phpfina_upload(
+                    $feed_settings['phpfina']['datadir'],
+                    $params->local_id,
+                    $params->remote_server,
+                    $params->remote_id,
+                    $params->remote_apikey
+                );
+            }
+            
+            if ($params->engine==Engine::PHPTIMESERIES) {
+                phptimeseries_upload(
+                    $feed_settings['phptimeseries']['datadir'],
+                    $params->local_id,
+                    $params->remote_server,
+                    $params->remote_id,
+                    $params->remote_apikey
+                );
+            }
         }
         
 
