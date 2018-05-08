@@ -38,6 +38,14 @@ Add the service runner to crontab (enter your home directory username e.g pi):
 
     crontab -e
     * * * * * /home/username/emonpi/service-runner >> /var/log/service-runner.log 2>&1
+    
+Ensure service-runner script can run sudo commands:
+
+    sudo nano /etc/sudoers
+    
+Add line with your username: 
+
+    myuser ALL=(ALL) NOPASSWD: ALL
 
 ### Troubleshooting
 
