@@ -87,20 +87,17 @@ function sync_list()
 
     var out = "";
     for (var name in feeds) {
-        out += "<tr>";
-        //out += "<td><input class='feed-select-checkbox' type=checkbox></td>";
-        
-        
-        var feedlocation = "";
+    
         var action = "";
         var status = "";
-        
+        var feedlocation = "";
         var interval = 0;
         var start_time = 0;
+        var tr = "<tr>";
         
         if (!feeds[name].local.exists && feeds[name].remote.exists) {
             feedlocation = "Remote"; 
-            action = "<button class='btn download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
+            action = "<button class='btn btn-small download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
             
             start_time = feeds[name].remote.start_time;
             interval = feeds[name].remote.interval;
@@ -108,35 +105,57 @@ function sync_list()
         
         if (feeds[name].local.exists && !feeds[name].remote.exists) {
             feedlocation = "Local";
-            action = "<button class='btn upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
+            action = "<button class='btn btn-small upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
             
             start_time = feeds[name].local.start_time;
             interval = feeds[name].local.interval;
         }
         
-        
+        if (feeds[name].local.start_time==feeds[name].remote.start_time && feeds[name].local.interval==feeds[name].remote.interval) {
+            feedlocation = "Both";
+            
+            start_time = feeds[name].local.start_time;
+            interval = feeds[name].local.interval;
+        }
         
         if (feeds[name].local.start_time==feeds[name].remote.start_time && feeds[name].local.interval==feeds[name].remote.interval) {
-            feedlocation = "Both";   
             if (feeds[name].local.npoints>feeds[name].remote.npoints) {
+                tr = "<tr class='info'>";
+                
                 status = "Local ahead of Remote by "+(feeds[name].local.npoints-feeds[name].remote.npoints)+" points";
-                action = "<button class='btn upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
+                action = "<button class='btn btn-small upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
+                
             } else if (feeds[name].local.npoints<feeds[name].remote.npoints) {
+                tr = "<tr class='warning'>";
+                
                 status = "Local behind Remote by "+(feeds[name].remote.npoints-feeds[name].local.npoints)+" points";
-                action = "<button class='btn download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
+                action = "<button class='btn btn-small download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
+                
             } else {
+                tr = "<tr class='success'>";
+                
                 status = "Local and Remote are the same";
                 action = "";
             }
-            
-            start_time = feeds[name].local.start_time;
-            interval = feeds[name].local.interval;
         }
         
+        //out += "<td><input class='feed-select-checkbox' type=checkbox></td>";
+        
+        out += tr;
         out += "<td>"+feedlocation+"</td>";
         out += "<td>"+name+"</td>";
-        out += "<td>"+timeConverter(start_time)+"</td>";
-        out += "<td>"+interval+"s</td>";
+        
+        if (interval!=undefined) {
+            out += "<td>"+timeConverter(start_time)+"</td>";
+        } else {
+            out += "<td>n/a</td>";
+        }
+        
+        if (interval!=undefined) {
+            out += "<td>"+interval+"s</td>";
+        } else {
+            out += "<td>n/a</td>";
+        } 
         
         out += "<td class='status' name='"+name+"'>"+status+"</td>";
         
@@ -196,7 +215,7 @@ $("#feeds").on("click",".download",function(){
     $(".status[name='"+name+"']").html("Downloading...");
     $.ajax({
         url: path+"sync/download", 
-        data: "name="+name+"&tag="+feeds[name].remote.tag+"&remoteid="+feeds[name].remote.id+"&interval="+feeds[name].remote.interval,
+        data: "name="+name+"&tag="+feeds[name].remote.tag+"&remoteid="+feeds[name].remote.id+"&interval="+feeds[name].remote.interval+"&engine="+feeds[name].remote.engine+"&datatype="+feeds[name].remote.datatype,
         dataType: 'json',
         async: true, 
         success: function(result){
