@@ -41,7 +41,7 @@
 </div>
 
 <table id="sync-table" class="table hide">
-    <tr><th></th><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
+    <tr><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
     <tbody id="feeds"></tbody>
 </table>
 
