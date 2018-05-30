@@ -1,4 +1,4 @@
-<?php global $path,$redis_enabled;
+<?php global $path,$redis_enabled,$route;
 
 $version = 1;
 
@@ -22,7 +22,7 @@ $version = 1;
           <li><a href="<?php echo $path; ?>sync/view/inputs">Inputs</a></li>
           <li><a href="<?php echo $path; ?>sync/view/feeds">Feeds</a></li>
           <li><a href="<?php echo $path; ?>sync/view/dashboards">Dashboards</a></li>
-          <li><a href="<?php echo $path; ?>sync/view/new"><i class="icon-plus icon-white"></i> New</a></li>
+          <!--<li><a href="<?php echo $path; ?>sync/view/new"><i class="icon-plus icon-white"></i> New</a></li>-->
       </ul>
       
     </div>
@@ -32,7 +32,7 @@ $version = 1;
 
   <div style="padding:20px">
 
-  <h2>Emoncms Sync</h2>
+  <h2>Emoncms Sync: <span id="page"></span></h2>
 
   <p>The module can be used to download or upload data to or from a remote emoncms installation.</p>
   <p>Start by entering the remote emoncms installation location in the <i>host</i> field (e.g https://emoncms.org). Then enter the <i>username</i> and <i>password</i> of the account you wish to link to.</p>
@@ -57,15 +57,23 @@ $version = 1;
   <div id="time" style="float:right; padding-top:10px; padding-right:20px">Next update: 0s</div>
 
 
-  <div class="alert alert-info">
+  <div class="alert alert-info"></div>
 
-  </div>
-
-  <table id="sync-table" class="table hide">
+  <table id="sync-table" class="table hide feed-view">
       <tr><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
       <tbody id="feeds"></tbody>
   </table>
+  
+  <div class="input-view hide">
+      <p>Download remote emoncms inputs <button id="download-inputs" class="btn">Download</button></p>
+      <pre id="input-output"></pre>
+  </div>
 
+  <div class="dashboard-view hide">
+      <p>Download remote emoncms dashboards <button id="download-dashboards" class="btn">Download</button></p>
+      <pre id="dashboard-output"></pre>
+  </div>
+  
   <?php } else { ?>
 
   <div class="alert alert-warning"><b>Error:</b> Redis is not installed or enabled. Please ensure that redis is installed on your system and then enabled in settings.php.</div>
@@ -79,10 +87,16 @@ $version = 1;
 
 <script>
 
+var subaction = "<?php echo $route->subaction; ?>";
+if (!subaction || subaction=="") subaction = "feeds";
+
 var redis_enabled = <?php echo $redis_enabled; ?>;
 var path = "<?php echo $path; ?>";
 var remote = false;
 var feeds = [];
+var next_update = 0;
+
+$("#page").html(subaction.charAt(0).toUpperCase() + subaction.slice(1));
 
 if (redis_enabled) {
     $(".alert").show().html("Connecting to remote emoncms server...");
@@ -95,8 +109,22 @@ if (redis_enabled) {
     $("#remote-username").val(remote.username);
 
     if (remote) {
-        $("#sync-table").show();
-        sync_list();
+        $(".alert").hide();
+        
+        if (subaction=="feeds") {
+            $(".feed-view").show();
+            sync_list();
+        }
+        
+        if (subaction=="inputs") {
+            $(".input-view").show();
+        }
+        
+        if (subaction=="dashboards") {
+            $(".dashboard-view").show();
+        }       
+        
+        
     }
 
     setInterval(sync_list,10000);
@@ -270,6 +298,28 @@ $("#feeds").on("click",".upload",function(){
                 alert(result.message); 
                 $(".status[name='"+name+"']").html("");
             }
+        } 
+    });
+});
+
+$("#download-inputs").click(function(){
+    $.ajax({
+        url: path+"sync/download-inputs", 
+        dataType: 'text',
+        async: true, 
+        success: function(result){
+            $("#input-output").html(result);
+        } 
+    });
+});
+
+$("#download-dashboards").click(function(){
+    $.ajax({
+        url: path+"sync/download-dashboards", 
+        dataType: 'text',
+        async: true, 
+        success: function(result){
+            $("#dashboard-output").html(result);
         } 
     });
 });
