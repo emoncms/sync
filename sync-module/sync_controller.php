@@ -226,7 +226,7 @@ function sync_controller()
     }
 
     // ---------------------------------------------------------------------------------------------------
-    // Download inputs, no input re-mapping yet
+    // Download inputs
     // ---------------------------------------------------------------------------------------------------  
     if ($route->action == "download-inputs") {
         $route->format = "text"; $out = "";
@@ -234,20 +234,63 @@ function sync_controller()
         $inputs = file_get_contents($remote->host."/input/list.json?apikey=".$remote->apikey_write);
         $inputs = json_decode($inputs);
         
+        // Feed re-mapping only for emoncms.org so far due to difference in input/getallprocesses API
+        $process_list = false;
+        $localfeeds = false;
+        if (strpos($remote->host,"emoncms.org")!==false) {
+            // 1. Load process list
+            $process_list = json_decode(file_get_contents($remote->host."/input/getallprocesses.json?apikey=".$remote->apikey_write));
+            // 2. Load remote feed list and map to feed id for easier reference
+            $tmp = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
+            $remotefeeds = array(); foreach ($tmp as $f) $remotefeeds[$f->id] = $f;
+            // 3. Load local feed list
+            $localfeeds = json_decode(json_encode($feed->get_user_feeds_with_meta($session['userid'])));
+        }
+        
         foreach ($inputs as $i)
         {
+            // remap processList
+            if ($process_list) {
+                $processList = array();
+                $pairs = explode(",",$i->processList);
+                foreach ($pairs as $pair) {
+                     $pair = explode(":",$pair);
+                     if (count($pair)==2) {
+                          $process_id = $pair[0];
+                          $process_value = $pair[1];
+                          $process_name = $process_id;
+                          if (isset($process_list->$process_id)) {
+                              $process_name = $process_list->$process_id[0];
+                              $process_type = $process_list->$process_id[1];
+                          
+                              if ($process_type==ProcessArg::FEEDID) {
+                                  $remote_feed_name = $remotefeeds[$process_value]->name;
+                                  foreach ($localfeeds as $f) {
+                                      if ($f->name==$remote_feed_name) {
+                                          $local_feed = $f->id;
+                                          $process_value = $local_feed;
+                                      }
+                                  }
+                              }
+                          }
+                          $processList[] = implode(":",array($process_id,$process_value));
+                     }
+                }
+                $processList = implode(",",$processList);
+            }
+        
             if ($inputid = $input->exists_nodeid_name($session["userid"],$i->nodeid,$i->name)) {
                 $out .= "UPDATE Input $i->nodeid:$i->name\n";
                 $input->set_timevalue($inputid, $i->time, $i->value);
                 $out .= "--set timevalue: $i->time,$i->value\n";
                 
                 $stmt = $mysqli->prepare("UPDATE input SET description=?, processList=? WHERE id=?");
-                $stmt->bind_param("ssi", $i->description, $i->processList, $inputid);
+                $stmt->bind_param("ssi", $i->description, $processList, $inputid);
                 $stmt->execute();
                 if ($redis) $redis->hset("input:$inputid",'description',$i->description);
-                if ($redis) $redis->hset("input:$inputid",'processList',$i->processList);
+                if ($redis) $redis->hset("input:$inputid",'processList',$processList);
                 $out .= "--set description: $i->description\n";
-                $out .= "--set processList: $i->processList\n";
+                $out .= "--set processList: $processList\n";
             
             } else {
                 $inputid = $input->create_input($session["userid"],$i->nodeid,$i->name);
@@ -256,12 +299,12 @@ function sync_controller()
                 $out .= "--set timevalue: $i->time,$i->value\n";
                 
                 $stmt = $mysqli->prepare("UPDATE input SET description=?, processList=? WHERE id=?");
-                $stmt->bind_param("ssi", $i->description, $i->processList, $inputid);
+                $stmt->bind_param("ssi", $i->description, $processList, $inputid);
                 $stmt->execute();
                 if ($redis) $redis->hset("input:$inputid",'description',$i->description);
-                if ($redis) $redis->hset("input:$inputid",'processList',$i->processList);
+                if ($redis) $redis->hset("input:$inputid",'processList',$processList);
                 $out .= "--set description: $i->description\n";
-                $out .= "--set processList: $i->processList\n";
+                $out .= "--set processList: $processList\n";
             }
         }
         
