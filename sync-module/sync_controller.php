@@ -245,11 +245,15 @@ function sync_controller()
             $remotefeeds = array(); foreach ($tmp as $f) $remotefeeds[$f->id] = $f;
             // 3. Load local feed list
             $localfeeds = json_decode(json_encode($feed->get_user_feeds_with_meta($session['userid'])));
+        } else {
+            $out .= "Host is not emoncms.org, feed remapping works with emoncms.org at present\n";  
         }
         
         foreach ($inputs as $i)
         {
             // remap processList
+            $processList = $i->processList;
+            
             if ($process_list) {
                 $processList = array();
                 $pairs = explode(",",$i->processList);
@@ -272,11 +276,17 @@ function sync_controller()
                                       }
                                   }
                               }
+                          } else {
+                              $out .= "process does not exist $process_id\n";
                           }
                           $processList[] = implode(":",array($process_id,$process_value));
+                     } else {
+                         $out .= "invalid processid:arg pair\n";
                      }
                 }
                 $processList = implode(",",$processList);
+            } else {
+                $out .= "process_list empty or false\n";
             }
         
             if ($inputid = $input->exists_nodeid_name($session["userid"],$i->nodeid,$i->name)) {
