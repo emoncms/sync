@@ -91,7 +91,8 @@ class Sync
     }
     
     public function trigger_service($homedir) {
-        $update_flag = "/tmp/emoncms-flag-sync";
+        $savepath = session_save_path();
+        $update_flag = "$savepath/emoncms-flag-sync";
         $update_script = "$homedir/sync/emoncms-sync.sh";
         $update_logfile = "$homedir/data/emoncms-sync.log";
         
