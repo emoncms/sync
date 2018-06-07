@@ -159,7 +159,10 @@ function sync_controller()
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));
-        $sync->trigger_service($homedir);
+        
+        $update_script = "$homedir/sync/emoncms-sync.sh";
+        $update_logfile = "$homedir/data/emoncms-sync.log";
+        $redis->rpush("service-runner","$update_script>$update_logfile");
         
         $result = array("success"=>true);
     }
@@ -221,7 +224,9 @@ function sync_controller()
         );
         $redis->lpush("sync-queue",json_encode($params));
             
-        $sync->trigger_service($homedir);
+        $update_script = "$homedir/sync/emoncms-sync.sh";
+        $update_logfile = "$homedir/data/emoncms-sync.log";
+        $redis->rpush("service-runner","$update_script>$update_logfile");
         $result = array("success"=>true);
     }
 

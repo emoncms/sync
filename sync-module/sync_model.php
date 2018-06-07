@@ -89,20 +89,4 @@ class Sync
         curl_close($curl);
         return $curl_response;
     }
-    
-    public function trigger_service($homedir) {
-        $savepath = session_save_path();
-        $update_flag = "$savepath/emoncms-flag-sync";
-        $update_script = "$homedir/sync/emoncms-sync.sh";
-        $update_logfile = "$homedir/data/emoncms-sync.log";
-        
-        $fh = @fopen($update_flag,"w");
-        if (!$fh) {
-            $result = "ERROR: Can't write the flag $update_flag.";
-        } else {
-            fwrite($fh,"$update_script>$update_logfile");
-            $result = "Update flag set";
-        }
-        @fclose($fh);
-    }
 }
