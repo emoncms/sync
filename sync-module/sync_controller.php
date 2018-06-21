@@ -269,8 +269,9 @@ function sync_controller()
                           $process_value = $pair[1];
                           $process_name = $process_id;
                           if (isset($process_list->$process_id)) {
-                              $process_name = $process_list->$process_id[0];
-                              $process_type = $process_list->$process_id[1];
+                              $process_tmp = $process_list->$process_id;
+                              $process_name = $process_tmp[0];
+                              $process_type = $process_tmp[1];
                           
                               if ($process_type==ProcessArg::FEEDID) {
                                   $remote_feed_name = $remotefeeds[$process_value]->name;
