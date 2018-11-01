@@ -30,7 +30,10 @@ class Sync
     public function remote_load($userid)
     {
         $userid = (int) $userid;
-        $result = $this->mysqli->query("SELECT * FROM sync WHERE `userid`='$userid'");
+        if (!$result = $this->mysqli->query("SELECT userid,host,apikey_read,apikey_write FROM sync WHERE `userid`='$userid'")) {
+            return array("success"=>false, "message"=>"SQL error");
+        }
+        
         if ($row = $result->fetch_object()) return $row;
         return array("success"=>false);
     }
