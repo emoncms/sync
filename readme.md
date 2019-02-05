@@ -27,7 +27,34 @@ Symlink the web part of the sync module into emoncms/Modules, if not using Raspb
     
 ### Install Service Runner
 
-The sync module downloads or uploads data using a script that runs in the background. This script can be automatically called using the emonpi service runner. The emonpi service runner can be installed on any linux machine. The installation steps are:
+The sync module downloads or uploads data using a script that runs in the background. This script can be automatically called using the emonpi service runner.
+
+#### on a PI running an old image
+
+For PI running old images (eg emonSD-26Oct17) you may have to install the python version of service runner
+
+cf https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md
+
+Assuming to have a uptodate version of emonCMS with recent scripts :
+
+    rpi-rw
+    sudo ln -s /var/www/emoncms/scripts/services/service-runner/service-runner.service /lib/systemd/system
+    sudo systemctl daemon-reload
+    sudo systemctl start service-runner.service
+
+to enable at startup :
+
+    rpi-rw
+    sudo systemctl enable /var/www/emoncms/scripts/services/service-runner/service-runner.service
+ 
+to check the status
+
+    systemctl status service-runner.service
+ 
+
+#### on a linux server
+
+The emonpi service runner can be installed on any linux machine. The installation steps are:
 
 Install the emonpi repository into home folder (e.g. /home/pi):
 
