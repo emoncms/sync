@@ -51,6 +51,12 @@ to check the status
 
     systemctl status service-runner.service
  
+to remove the previous form of shell service-runner 
+
+    sudo crontab -e
+
+comment out the service-runner entry
+
 
 #### on a linux server
 
