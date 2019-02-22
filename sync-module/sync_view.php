@@ -288,7 +288,7 @@ $("#feeds").on("click",".upload",function(){
     $(".status[name='"+name+"']").html("Uploading...");
     $.ajax({
         url: path+"sync/upload", 
-        data: "name="+name+"&tag="+feeds[name].local.tag+"&localid="+feeds[name].local.id+"&interval="+feeds[name].local.interval,
+        data: "name="+name+"&tag="+feeds[name].local.tag+"&localid="+feeds[name].local.id+"&interval="+feeds[name].local.interval+"&engine="+feeds[name].local.engine+"&datatype="+feeds[name].local.datatype,
         dataType: 'json',
         async: true, 
         success: function(result){

@@ -180,7 +180,7 @@ function sync_controller()
         $tag = $_GET['tag'];
         
         if (!isset($_GET['localid'])) return emoncms_error("missing localid parameter");
-        $local_id = (int) $_GET['remoteid'];
+        $local_id = (int) $_GET['localid'];
         
         if (!isset($_GET['interval'])) return emoncms_error("missing interval parameter");
         $interval = (int) $_GET['interval'];
@@ -220,6 +220,8 @@ function sync_controller()
             "local_id"=>$local_id,
             "remote_server"=>$remote->host,
             "remote_id"=>$remote_id,
+            "engine"=>$engine,
+            "datatype"=>$datatype,
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));
