@@ -12,25 +12,9 @@ $version = 1;
     padding:2px;
 }
 </style>
-<link rel="stylesheet" href="<?php echo $path; ?>Modules/sync/style.css">
 
 <div id="wrapper">
-  <div class="sidenav">
-    <div class="sidenav-inner">
-      
-      <ul class="sidenav-menu">
-          <li><a href="<?php echo $path; ?>sync/view/inputs">Inputs</a></li>
-          <li><a href="<?php echo $path; ?>sync/view/feeds">Feeds</a></li>
-          <li><a href="<?php echo $path; ?>sync/view/dashboards">Dashboards</a></li>
-          <!--<li><a href="<?php echo $path; ?>sync/view/new"><i class="icon-plus icon-white"></i> New</a></li>-->
-      </ul>
-      
-    </div>
-  </div>
-
-  <div style="height:10px"></div>
-
-  <div style="padding:20px">
+  <div>
 
   <h2>Emoncms Sync: <span id="page"></span></h2>
 
@@ -42,10 +26,10 @@ $version = 1;
   <?php if ($redis_enabled) { ?>
 
   <div class="input-prepend input-append">
-  <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
-  <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
-  <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
-  <button id="remote-save" class="btn">Connect</button>
+    <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
+    <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
+    <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
+    <button id="remote-save" class="btn">Connect</button>
   </div>
 
   <!--
@@ -83,7 +67,6 @@ $version = 1;
   </div>
 </div>
 
-<script type="text/javascript" src="<?php echo $path; ?>Modules/sync/sidebar.js?v=<?php echo $version; ?>"></script>
 
 <script>
 

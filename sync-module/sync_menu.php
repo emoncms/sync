@@ -1,22 +1,17 @@
 <?php
 
-$domain = "messages";
-
-$menu_left[] = array(
-    'id'=>"sync_menu",
-    'name'=>"Sync", 
-    'path'=>"sync/view" , 
-    'session'=>"write", 
-    'order' => 0,
-    'icon'=>'icon-random icon-white',
-    'hideinactive'=>1
+$menu['sidebar']['setup'][] = array(
+    'text' => _("Sync"),
+    'path' => 'sync/view',
+    'icon' => 'shuffle',
+    'data'=> array('sidebar' => '#sidebar_sync') // selector for the sidebar menu to open on click
 );
 
-$menu_dropdown_config[] = array(
-    'id'=>"sync_menu_config",
-    'name'=> "Sync", 
-    'icon'=>'icon-random',
-    'path'=>"sync/view" ,
-    'session'=>"write",
-    'order' => 31
+$menu['sidebar']['includes']['setup']['sync'][] = array(
+    'text' => _("Inputs"),
+    'path' => 'sync/view/inputs'
+);
+$menu['sidebar']['includes']['setup']['sync'][] = array(
+    'text' => _("Feeds"),
+    'path' => 'sync/view/feeds'
 );
