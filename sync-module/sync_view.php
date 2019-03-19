@@ -227,7 +227,7 @@ function sync_list()
 $("#remote-save").click(function(){
     var host = $("#remote-host").val();
     var username = $("#remote-username").val();
-    var password = $("#remote-password").val();
+    var password = encodeURIComponent($("#remote-password").val());
     
     $("#sync-table").hide();
     $(".alert").show().html("Connecting to remote emoncms server...");
