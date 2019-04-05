@@ -31,7 +31,8 @@ function sync_controller()
     //    local emoncms fetches the remote read and write apikey and stores locally
     if ($route->action == "remove-save") {
         $route->format = "json";
-        return $sync->remote_save($session["userid"],post("host"),post("username"),post("password"));
+        $_password = urldecode(post("password"));
+        return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
     }
     
     if ($route->action == "remote-load") {
