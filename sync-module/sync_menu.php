@@ -15,3 +15,7 @@ $menu['sidebar']['includes']['setup']['sync'][] = array(
     'text' => _("Feeds"),
     'path' => 'sync/view/feeds'
 );
+$menu['sidebar']['includes']['setup']['sync'][] = array(
+    'text' => _("Dashboards"),
+    'path' => 'sync/view/dashboards'
+);
