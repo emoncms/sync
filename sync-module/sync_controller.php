@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function sync_controller()
 {
-    global $homedir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings;
+    global $homedir,$linked_modules_dir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings;
 
     $result = false;
 
@@ -161,11 +161,8 @@ function sync_controller()
         );
         $redis->lpush("sync-queue",json_encode($params));
         
-        if (file_exists("$homedir/sync/emoncms-sync.sh")) {
-            $update_script = "$homedir/sync/emoncms-sync.sh";
-        } else if (file_exists("$homedir/modules/sync/emoncms-sync.sh")) {
-            $update_script = "$homedir/modules/sync/emoncms-sync.sh";
-        }
+        if (!$linked_modules_dir) $linked_modules_dir = $homedir;
+        $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
         $update_logfile = "$homedir/data/emoncms-sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         
@@ -230,8 +227,9 @@ function sync_controller()
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));
-            
-        $update_script = "$homedir/sync/emoncms-sync.sh";
+
+        if (!$linked_modules_dir) $linked_modules_dir = $homedir;            
+        $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
         $update_logfile = "$homedir/data/emoncms-sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         $result = array("success"=>true);
