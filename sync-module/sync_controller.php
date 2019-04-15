@@ -161,7 +161,11 @@ function sync_controller()
         );
         $redis->lpush("sync-queue",json_encode($params));
         
-        $update_script = "$homedir/sync/emoncms-sync.sh";
+        if (file_exists("$homedir/sync/emoncms-sync.sh")) {
+            $update_script = "$homedir/sync/emoncms-sync.sh";
+        } else if (file_exists("$homedir/modules/sync/emoncms-sync.sh")) {
+            $update_script = "$homedir/modules/sync/emoncms-sync.sh";
+        }
         $update_logfile = "$homedir/data/emoncms-sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         
