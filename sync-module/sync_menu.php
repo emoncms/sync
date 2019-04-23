@@ -1,6 +1,6 @@
 <?php
 
-$menu['sidebar']['setup'][] = array(
+$menu['setup'][] = array(
     'text' => _("Sync"),
     'path' => 'sync/view',
     'icon' => 'shuffle',
