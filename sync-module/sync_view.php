@@ -1,6 +1,6 @@
 <?php global $path,$redis_enabled,$route;
 
-$version = 1;
+$version = 2;
 
 ?>
 <style>
