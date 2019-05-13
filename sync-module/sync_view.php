@@ -1,8 +1,4 @@
-<?php global $path,$redis_enabled,$route;
-
-$version = 2;
-
-?>
+<?php global $path,$redis_enabled,$route; ?>
 <style>
 .syncprogress {
     background-color:#7bc3e2;
@@ -13,8 +9,6 @@ $version = 2;
 }
 </style>
 
-<div id="wrapper">
-  <div>
 
   <h2>Emoncms Sync: <span id="page"></span></h2>
 
@@ -63,10 +57,6 @@ $version = 2;
   <div class="alert alert-warning"><b>Error:</b> Redis is not installed or enabled. Please ensure that redis is installed on your system and then enabled in settings.php.</div>
 
   <?php } ?>
-
-  </div>
-</div>
-
 
 <script>
 
