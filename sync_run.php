@@ -1,4 +1,7 @@
 <?php
+// Get script location
+list($scriptPath) = get_included_files();
+$scriptPath = str_replace("/sync_run.php","",$scriptPath);
 
 $fp = fopen("/tmp/sync-runlock", "w");
 if (! flock($fp, LOCK_EX | LOCK_NB)) { echo "Already running\n"; die; }
@@ -7,9 +10,7 @@ echo "SYNC: Starting\n";
 define('EMONCMS_EXEC', 1);
 chdir("/var/www/emoncms");
 require "process_settings.php";
-echo "SYNC: Home dir: $homedir\n";
-if (!isset($homedir)) $homedir = "/home/pi";
-chdir("$homedir/sync/");
+chdir($scriptPath);
 
 require "lib/phpfina.php";
 require "lib/phptimeseries.php";

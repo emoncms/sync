@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function sync_controller()
 {
-    global $homedir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings;
+    global $homedir,$linked_modules_dir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings,$log_location;
 
     $result = '#UNDEFINED#';
 
@@ -31,7 +31,8 @@ function sync_controller()
     //    local emoncms fetches the remote read and write apikey and stores locally
     if ($route->action == "remove-save") {
         $route->format = "json";
-        return $sync->remote_save($session["userid"],post("host"),post("username"),post("password"));
+        $_password = urldecode(post("password"));
+        return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
     }
     
     if ($route->action == "remote-load") {
@@ -160,8 +161,9 @@ function sync_controller()
         );
         $redis->lpush("sync-queue",json_encode($params));
         
-        $update_script = "$homedir/sync/emoncms-sync.sh";
-        $update_logfile = "$homedir/data/emoncms-sync.log";
+        if (!$linked_modules_dir) $linked_modules_dir = $homedir;
+        $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
+        $update_logfile = "$log_location/sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         
         $result = array("success"=>true);
@@ -225,9 +227,10 @@ function sync_controller()
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));
-            
-        $update_script = "$homedir/sync/emoncms-sync.sh";
-        $update_logfile = "$homedir/data/emoncms-sync.log";
+
+        if (!$linked_modules_dir) $linked_modules_dir = $homedir;            
+        $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
+        $update_logfile = "$log_location/sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         $result = array("success"=>true);
     }

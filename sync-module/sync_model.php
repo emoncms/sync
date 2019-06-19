@@ -44,7 +44,7 @@ class Sync
         // Input sanitisation
         $userid = (int) $userid;
         if (!$username || !$password) return array('success'=>false, 'message'=>_("Username or password empty"));
-        $username_out = preg_replace('/[^\p{N}\p{L}_\s-]/u','',$username);
+        $username_out = preg_replace('/[^\p{N}\p{L}_\s\-]/u','',$username);
         if ($username_out!=$username) return array('success'=>false, 'message'=>_("Username must only contain a-z 0-9 dash and underscore"));
         $username = $this->mysqli->real_escape_string($username);        
         
