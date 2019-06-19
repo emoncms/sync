@@ -14,7 +14,7 @@ The Sync module is included in the default EmonPi/EmonBase software stack as of 
 
     ln -s /var/www/html/emoncms /var/www/emoncms
     
-The setting **$homedir** in emoncms settings.php also need to be set to reflect your system.    
+The setting **$home_dir** or **$emoncms_dir** in emoncms settings.php also need to be set to reflect your system.    
 
 Install the sync module into home folder (e.g. /home/pi) directory (rather than emoncms/Modules):
 
@@ -82,7 +82,7 @@ Add line with your username:
 
 ### Troubleshooting
 
-- Check that the $homedir setting is set appropriately on your emoncms installation
+- Check that the $homedir or $emoncms_dir setting is set appropriately on your emoncms installation
 - If your emoncms installation is in /var/www/html/emoncms, make a symlink to /var/www/emoncms as described above.
 
 To run the sync process manually:
