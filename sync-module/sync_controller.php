@@ -7,7 +7,7 @@ function sync_controller()
 {
     global $linked_modules_dir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings,$log_location;
 
-    $result = false;
+    $result = '#UNDEFINED#';
 
     require_once "Modules/feed/feed_model.php";
     $feed = new Feed($mysqli,$redis,$feed_settings);
@@ -24,7 +24,7 @@ function sync_controller()
     
     if ($route->action == "view") {
         $route->format = "html";
-        return view("Modules/sync/sync_view.php",array());
+        return view("Modules/sync/sync_view.php",array('version'=>1));
     }
     
     // 1. User enters username, password and host of remote installation
@@ -385,7 +385,7 @@ function sync_controller()
 
     }
     
-    return array('content'=>$result, 'fullwidth'=>true);
+    return array('content'=>$result);
 }
 
 
