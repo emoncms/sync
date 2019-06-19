@@ -11,19 +11,14 @@ $menu['sidebar']['emoncms'][] = array(
 
 // sub menu
 $menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('Inputs'),
+    'text' => _('Sync Inputs'),
     'path' => 'sync/view/inputs',
 );
 $menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('Feeds'),
+    'text' => _('Sync Feeds'),
     'path' => 'sync/view/feeds',
 );
 $menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('Dashboards'),
+    'text' => _('Sync Dashboards'),
     'path' => 'sync/view/dashboards',
-);
-$menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('New'),
-    'icon' => 'plus',
-    'path' => 'sync/view/new',
 );
