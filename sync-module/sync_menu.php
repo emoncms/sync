@@ -6,7 +6,7 @@ $menu['sidebar']['emoncms'][] = array(
     'path' => 'sync/view',
     'icon' => 'shuffle',
     'data'=> array('sidebar' => '#sync'),
-    'order'=>'9'
+    'order'=>'b4'
 );
 
 // sub menu
