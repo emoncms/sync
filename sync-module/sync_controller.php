@@ -5,12 +5,12 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function sync_controller()
 {
-    global $linked_modules_dir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings,$log_location;
+    global $linked_modules_dir,$path,$session,$route,$mysqli,$redis,$user,$settings;
 
     $result = '#UNDEFINED#';
 
     require_once "Modules/feed/feed_model.php";
-    $feed = new Feed($mysqli,$redis,$feed_settings);
+    $feed = new Feed($mysqli,$redis,$settings["feed"]);
 
     require_once "Modules/input/input_model.php";
     $input = new Input($mysqli,$redis, $feed);
@@ -162,7 +162,7 @@ function sync_controller()
         $redis->lpush("sync-queue",json_encode($params));
         
         $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
-        $update_logfile = "$log_location/sync.log";
+        $update_logfile = $settings["log"]["location"]."/sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         
         $result = array("success"=>true);
@@ -228,7 +228,7 @@ function sync_controller()
         $redis->lpush("sync-queue",json_encode($params));
         
         $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
-        $update_logfile = "$log_location/sync.log";
+        $update_logfile = $settings["log"]["location"]."/sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
         $result = array("success"=>true);
     }

@@ -1,4 +1,4 @@
-<?php global $path,$redis_enabled,$route; ?>
+<?php global $path,$settings,$route; ?>
 <style>
 .syncprogress {
     background-color:#7bc3e2;
@@ -17,7 +17,7 @@
   <p>Download or upload specific feeds as required.</p>
   <p><b>Note:</b> Data upload is not yet enabled on emoncms.org.</p>
   <br>
-  <?php if ($redis_enabled) { ?>
+  <?php if ($settings["redis"]["enabled"]) { ?>
 
   <div class="input-prepend input-append">
     <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
@@ -62,7 +62,7 @@
 var subaction = "<?php echo $route->subaction; ?>";
 if (!subaction || subaction=="") subaction = "feeds";
 
-var redis_enabled = <?php echo $redis_enabled; ?>;
+var redis_enabled = <?php echo $settings["redis"]["enabled"]; ?>;
 var path = "<?php echo $path; ?>";
 //is remote var used and usefull ?
 //var remote = false;
