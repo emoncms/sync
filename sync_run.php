@@ -16,15 +16,15 @@ require "lib/phpfina.php";
 require "lib/phptimeseries.php";
 
 // Load redis
-if (!$redis_enabled) { echo "ERROR: Redis is not enabled"; die; }
+if (!$settings['redis']['enabled']) { echo "ERROR: Redis is not enabled"; die; }
 
 $redis = new Redis();
-$connected = $redis->connect($redis_server['host'], $redis_server['port']);
-if (!$connected) { echo "Can't connect to redis at ".$redis_server['host'].":".$redis_server['port']; die; }
-if (!empty($redis_server['prefix'])) $redis->setOption(Redis::OPT_PREFIX, $redis_server['prefix']);
-if (!empty($redis_server['auth'])) {
-    if (!$redis->auth($redis_server['auth'])) {
-        echo "Can't connect to redis at ".$redis_server['host'].", autentication failed"; die;
+$connected = $redis->connect($settings['redis']['host'], $settings['redis']['port']);
+if (!$connected) { echo "Can't connect to redis at ".$settings['redis']['host'].":".$settings['redis']['port']; die; }
+if (!empty($settings['redis']['prefix'])) $redis->setOption(Redis::OPT_PREFIX, $settings['redis']['prefix']);
+if (!empty($settings['redis']['auth'])) {
+    if (!$redis->auth($settings['redis']['auth'])) {
+        echo "Can't connect to redis at ".$settings['redis']['host'].", autentication failed"; die;
     }
 }
 echo "SYNC: Connected to Redis\n";
@@ -44,7 +44,7 @@ while(true){
         
             if ($params->engine==Engine::PHPFINA) {
                 $lastvalue = phpfina_download(
-                    $feed_settings['phpfina']['datadir'],
+                    $settings['feed']['phpfina']['datadir'],
                     $params->local_id,
                     $params->remote_server,
                     $params->remote_id,
@@ -54,7 +54,7 @@ while(true){
             
             if ($params->engine==Engine::PHPTIMESERIES) {
                 $lastvalue = phptimeseries_download(
-                    $feed_settings['phptimeseries']['datadir'],
+                    $settings['feed']['phptimeseries']['datadir'],
                     $params->local_id,
                     $params->remote_server,
                     $params->remote_id,
@@ -71,7 +71,7 @@ while(true){
 
             if ($params->engine==Engine::PHPFINA) {
                 phpfina_upload(
-                    $feed_settings['phpfina']['datadir'],
+                    $settings['feed']['phpfina']['datadir'],
                     $params->local_id,
                     $params->remote_server,
                     $params->remote_id,
@@ -81,7 +81,7 @@ while(true){
             
             if ($params->engine==Engine::PHPTIMESERIES) {
                 phptimeseries_upload(
-                    $feed_settings['phptimeseries']['datadir'],
+                    $settings['feed']['phptimeseries']['datadir'],
                     $params->local_id,
                     $params->remote_server,
                     $params->remote_id,
