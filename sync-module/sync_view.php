@@ -1,4 +1,3 @@
-<?php global $path,$redis_enabled,$route; ?>
 <style>
 .syncprogress {
     background-color:#7bc3e2;
@@ -63,7 +62,6 @@ var subaction = "<?php echo $route->subaction; ?>";
 if (!subaction || subaction=="") subaction = "feeds";
 
 var redis_enabled = <?php echo $redis_enabled; ?>;
-var path = "<?php echo $path; ?>";
 //is remote var used and usefull ?
 //var remote = false;
 var feeds = [];

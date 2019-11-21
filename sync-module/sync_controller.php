@@ -5,7 +5,7 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 
 function sync_controller()
 {
-    global $linked_modules_dir,$path,$session,$route,$mysqli,$redis,$user,$feed_settings,$log_location;
+    global $settings, $linked_modules_dir, $session, $route, $mysqli, $redis, $feed_settings, $log_location;
 
     $result = '#UNDEFINED#';
 
@@ -24,7 +24,11 @@ function sync_controller()
     
     if ($route->action == "view") {
         $route->format = "html";
-        return view("Modules/sync/sync_view.php",array('version'=>1));
+        return view("Modules/sync/sync_view.php", array(
+            'version' => 1,
+            'redis_enabled' => $settings['redis']['enabled'],
+            'route' => $route
+        ));
     }
     
     // 1. User enters username, password and host of remote installation
