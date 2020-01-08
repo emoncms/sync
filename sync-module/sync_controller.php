@@ -59,11 +59,11 @@ function sync_controller()
                 $l->exists = true;
                 $l->id = (int) $f->id;
                 $l->tag = $f->tag;
-                $l->engine = $f->engine;
-                $l->datatype = $f->datatype;
-                $l->start_time = $f->start_time; 
-                $l->interval = $f->interval; 
-                $l->npoints = $f->npoints; 
+                $l->engine = isset($f->engine) ? $f->engine: '';
+                $l->datatype = isset($f->datatype) ? $f->datatype: '';
+                $l->start_time = isset($f->start_time) ? $f->start_time: ''; 
+                $l->interval = isset($f->interval) ? $f->interval: ''; 
+                $l->npoints = isset($f->npoints) ? $f->npoints: ''; 
                 
                 // Create empty remote feed entry
                 // may be overwritten in the next step
