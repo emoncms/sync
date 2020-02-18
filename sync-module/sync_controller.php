@@ -14,19 +14,19 @@ function sync_controller()
 
     require_once "Modules/input/input_model.php";
     $input = new Input($mysqli,$redis, $feed);
-        
+
     include "Modules/sync/sync_model.php";
     $sync = new Sync($mysqli);
-    
+
     if (!$session["write"]) return emoncms_error("sync module requires write access");
-    
+
     // ----------------------------------------------------
-    
+
     if ($route->action == "view") {
         $route->format = "html";
         return view("Modules/sync/sync_view.php",array('version'=>1));
     }
-    
+
     // 1. User enters username, password and host of remote installation
     //    local emoncms fetches the remote read and write apikey and stores locally
     if ($route->action == "remove-save") {
@@ -34,24 +34,24 @@ function sync_controller()
         $_password = urldecode(post("password"));
         return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
     }
-    
+
     if ($route->action == "remote-load") {
         $route->format = "json";
         return $sync->remote_load($session["userid"]);
     }
-    
+
     if ($route->action == "feed-list") {
         $route->format = "json";
-        
+
         // 1. Load local feeds
         $localfeeds = json_decode(json_encode($feed->get_user_feeds_with_meta($session['userid'])));
         // 2. Load remote settings
         $remote = $sync->remote_load($session["userid"]);
         // 3. Load remote feeds
         $remotefeeds = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
-        
+
         $feeds = array();
-        
+
         // Load all local feeds into feed list array
         foreach ($localfeeds as $f) {
             if (in_array($f->engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) {
@@ -64,7 +64,7 @@ function sync_controller()
                 $l->start_time = isset($f->start_time) ? $f->start_time: ''; 
                 $l->interval = isset($f->interval) ? $f->interval: ''; 
                 $l->npoints = isset($f->npoints) ? $f->npoints: ''; 
-                
+
                 // Create empty remote feed entry
                 // may be overwritten in the next step
                 $r = new stdClass();
@@ -72,7 +72,7 @@ function sync_controller()
                 $r->start_time = "";
                 $r->interval = "";
                 $r->npoints = "";
-                
+
                 $feeds[$f->name] = new stdClass();
                 $feeds[$f->name]->local = $l;
                 $feeds[$f->name]->remote = $r;
@@ -92,52 +92,54 @@ function sync_controller()
                 $r->start_time = $f->start_time;
                 $r->interval = $f->interval;
                 $r->npoints = $f->npoints;
-                
+
                 // Only used if no local feed
                 $l = new stdClass();
                 $l->exists = false;
                 $l->start_time = "";
                 $l->interval = "";
                 $l->npoints = "";
-                
+
                 if (!isset($feeds[$f->name])) {
                     $feeds[$f->name] = new stdClass();
                     $feeds[$f->name]->local = $l;
                 }
                 $feeds[$f->name]->remote = $r;
             }
-        }        
-        
+        }
+
         $result = $feeds;
     }
-    
+
     // ---------------------------------------------------------------------------------------------------
     // Download feed
     // ---------------------------------------------------------------------------------------------------
     if ($route->action == "download") {
         $route->format = "json";
-        
+
         if (!isset($_GET['name'])) return emoncms_error("missing name parameter");
         $name = $_GET['name'];
-        
+
         if (!isset($_GET['tag'])) return emoncms_error("missing tag parameter");
         $tag = $_GET['tag'];
-        
+
         if (!isset($_GET['remoteid'])) return emoncms_error("missing remoteid parameter");
         $remote_id = (int) $_GET['remoteid'];
-        
+
+        if (!$remote_id) return emoncms_error("invalid remoteid parameter");
+
         if (!isset($_GET['interval'])) return emoncms_error("missing interval parameter");
         $interval = (int) $_GET['interval'];
 
         if (!isset($_GET['engine'])) return emoncms_error("missing engine parameter");
         $engine = (int) $_GET['engine'];
-        
+
         if (!isset($_GET['datatype'])) return emoncms_error("missing datatype parameter");
         $datatype = (int) $_GET['datatype'];
-        
+
         // Check that engine is supported
         if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
-        
+
         // Create local feed entry if no feed exists of given name
         if (!$local_id = $feed->get_id($session["userid"],$name)) {
             $options = new stdClass();
@@ -145,11 +147,11 @@ function sync_controller()
             $result = $feed->create($session['userid'],$tag,$name,$datatype,$engine,$options);
             $local_id = $result["feedid"];
         }
-        
+
         if (!$local_id) return emoncms_error("invalid local id");
-        
+
         $remote = $sync->remote_load($session["userid"]);
-        
+
         $params = array(
             "action"=>"download",
             "local_id"=>$local_id,
@@ -160,17 +162,17 @@ function sync_controller()
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));
-        
+
         $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
         $update_logfile = $settings["log"]["location"]."/sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
-        
+
         $result = array("success"=>true);
     }
 
     // ---------------------------------------------------------------------------------------------------
     // Upload feed
-    // ---------------------------------------------------------------------------------------------------    
+    // ---------------------------------------------------------------------------------------------------
     if ($route->action == "upload") {
         $route->format = "json";
 
@@ -193,12 +195,17 @@ function sync_controller()
         if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
         
         $remote = $sync->remote_load($session["userid"]);
-        
-        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&name=".$name);
-        
+
+	$url = $remote->host;
+	$url .= "/feed/getid.json?apikey=";
+	$url .= $remote->apikey_read;
+	$url .= "&name=";
+	$url .= urlencode($name);
+        $remote_id = (int) file_get_contents($url);
+
         if (!$remote_id) {
             print "creating feed";
-        
+
             $url = $remote->host."/feed/create.json?";
             $url .= "apikey=".$remote->apikey_write;
             $url .= "&name=".urlencode($name);
@@ -211,11 +218,13 @@ function sync_controller()
             if ($result->success) {
                 $remote_id = $result->feedid;
             }
-            
+
             print $remote_id;
         }
         usleep(100);
-        
+
+        if (!$remote_id) return emoncms_error("invalid remoteid parameter");
+
         $params = array(
             "action"=>"upload",
             "local_id"=>$local_id,
@@ -235,7 +244,7 @@ function sync_controller()
 
     // ---------------------------------------------------------------------------------------------------
     // Download inputs
-    // ---------------------------------------------------------------------------------------------------  
+    // ---------------------------------------------------------------------------------------------------
     if ($route->action == "download-inputs") {
         $route->format = "text"; $out = "";
         $remote = $sync->remote_load($session["userid"]);
@@ -254,9 +263,9 @@ function sync_controller()
             // 3. Load local feed list
             $localfeeds = json_decode(json_encode($feed->get_user_feeds_with_meta($session['userid'])));
         } else {
-            $out .= "Host is not emoncms.org, feed remapping works with emoncms.org at present\n";  
+            $out .= "Host is not emoncms.org, feed remapping works with emoncms.org at present\n";
         }
-        
+
         foreach ($inputs as $i)
         {
             // remap processList
