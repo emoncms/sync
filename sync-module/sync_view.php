@@ -187,10 +187,10 @@ function remoteLoad()
       dataType: 'json', 
       async: true, 
       success(result){
-        //don't really understand this test as remote-load do not return any success field
-        //if (result.success!=undefined && !result.success) {
-        //    //remote=false; 
-        //} else {
+        if (result.success!=undefined && !result.success) {
+            remote=false; 
+            $(".alert").hide();
+        } else {
             //remote=result;
             $(".alert").hide();
             $("#remote-host").val(result.host);
@@ -205,7 +205,7 @@ function remoteLoad()
             if (subaction=="dashboards") {
               $(".dashboard-view").show();
             }
-        //}
+        }
       },
       error(xhr) { 
         var errorMessage = xhr.status + ": " + xhr.statusText;

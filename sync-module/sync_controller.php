@@ -47,6 +47,7 @@ function sync_controller()
         $localfeeds = json_decode(json_encode($feed->get_user_feeds_with_meta($session['userid'])));
         // 2. Load remote settings
         $remote = $sync->remote_load($session["userid"]);
+        if (is_array($remote) && isset($remote['success']) && $remote['success']==false) return false;
         // 3. Load remote feeds
         $remotefeeds = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
         
@@ -87,11 +88,12 @@ function sync_controller()
                 $r->exists = true;
                 $r->id = (int) $f->id;
                 $r->tag = $f->tag;
-                $r->engine = $f->engine;
-                $r->datatype = $f->datatype;
-                $r->start_time = $f->start_time;
-                $r->interval = $f->interval;
-                $r->npoints = $f->npoints;
+                
+                $r->engine = isset($f->engine) ? $f->engine: '';
+                $r->datatype = isset($f->datatype) ? $f->datatype: '';
+                $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
+                $r->interval = isset($f->interval) ? $f->interval: ''; 
+                $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
                 
                 // Only used if no local feed
                 $l = new stdClass();
