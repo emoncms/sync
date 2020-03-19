@@ -195,8 +195,8 @@ function sync_controller()
         if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
         
         $remote = $sync->remote_load($session["userid"]);
-        
-        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&name=".$name);
+                
+        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&name=".urlencode($name));
         
         if (!$remote_id) {
             print "creating feed";
