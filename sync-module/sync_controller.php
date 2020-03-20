@@ -211,7 +211,7 @@ function sync_controller()
             $url .= "&name=".urlencode($name);
             $url .= "&tag=".urlencode($tag);
             $url .= "&datatype=".DataType::REALTIME;
-            $url .= "&engine=".Engine::PHPFINA;
+            $url .= "&engine=".$engine;
             $url .= "&options=".json_encode(array("interval"=>$interval));
 
             $result = json_decode(file_get_contents($url));
