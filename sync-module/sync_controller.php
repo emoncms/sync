@@ -60,6 +60,8 @@ function sync_controller()
                 $l->exists = true;
                 $l->id = (int) $f->id;
                 $l->tag = $f->tag;
+                $l->name = $f->name;
+                
                 $l->engine = isset($f->engine) ? $f->engine: '';
                 $l->datatype = isset($f->datatype) ? $f->datatype: '';
                 $l->start_time = isset($f->start_time) ? $f->start_time: ''; 
@@ -74,9 +76,9 @@ function sync_controller()
                 $r->interval = "";
                 $r->npoints = "";
                 
-                $feeds[$f->name] = new stdClass();
-                $feeds[$f->name]->local = $l;
-                $feeds[$f->name]->remote = $r;
+                $feeds[$f->tag."/".$f->name] = new stdClass();
+                $feeds[$f->tag."/".$f->name]->local = $l;
+                $feeds[$f->tag."/".$f->name]->remote = $r;
             }
         }
 
@@ -88,6 +90,7 @@ function sync_controller()
                 $r->exists = true;
                 $r->id = (int) $f->id;
                 $r->tag = $f->tag;
+                $r->name = $f->name;
                 
                 $r->engine = isset($f->engine) ? $f->engine: '';
                 $r->datatype = isset($f->datatype) ? $f->datatype: '';
@@ -98,15 +101,17 @@ function sync_controller()
                 // Only used if no local feed
                 $l = new stdClass();
                 $l->exists = false;
+                $l->tag = $f->tag;
+                $l->name = $f->name;
                 $l->start_time = "";
                 $l->interval = "";
                 $l->npoints = "";
                 
-                if (!isset($feeds[$f->name])) {
-                    $feeds[$f->name] = new stdClass();
-                    $feeds[$f->name]->local = $l;
+                if (!isset($feeds[$f->tag."/".$f->name])) {
+                    $feeds[$f->tag."/".$f->name] = new stdClass();
+                    $feeds[$f->tag."/".$f->name]->local = $l;
                 }
-                $feeds[$f->name]->remote = $r;
+                $feeds[$f->tag."/".$f->name]->remote = $r;
             }
         }        
         
@@ -141,7 +146,7 @@ function sync_controller()
         if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
         
         // Create local feed entry if no feed exists of given name
-        if (!$local_id = $feed->get_id($session["userid"],$name)) {
+        if (!$local_id = $feed->exists_tag_name($session["userid"],$tag,$name)) {
             $options = new stdClass();
             if ($engine==Engine::PHPFINA) $options->interval = $interval;
             $result = $feed->create($session['userid'],$tag,$name,$datatype,$engine,$options);
@@ -196,7 +201,7 @@ function sync_controller()
         
         $remote = $sync->remote_load($session["userid"]);
                 
-        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&name=".urlencode($name));
+        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&tag=".urlencode($tagf)."&name=".urlencode($name));
         
         if (!$remote_id) {
             print "creating feed";

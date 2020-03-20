@@ -37,7 +37,7 @@
   <div class="alert alert-info"></div>
 
   <table class="table hide feed-view">
-      <tr><th>Location</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
+      <tr><th>Location</th><th>Feed Tag</th><th>Feed Name</th><th>Start time</th><th>Interval</th><th></th><th></th></tr>
       <tbody id="all_feed_datas"></tbody>
   </table>
 
@@ -73,7 +73,7 @@ var next_update = 0;
 function jsonfeedsTohtml(feeds)
 {
     var out = [];
-    for (var name in feeds) {
+    for (var tagname in feeds) {
     
       var action = "";
       var status = "";
@@ -82,41 +82,41 @@ function jsonfeedsTohtml(feeds)
       var start_time = 0;
       var tr = "<tr>";
         
-      if (!feeds[name].local.exists && feeds[name].remote.exists) {
+      if (!feeds[tagname].local.exists && feeds[tagname].remote.exists) {
         feedlocation = "Remote"; 
-        action = "<button class='btn btn-small download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
+        action = "<button class='btn btn-small download' tagname='"+tagname+"'><i class='icon-arrow-left' ></i> Download</button>";
             
-        start_time = feeds[name].remote.start_time;
-        interval = feeds[name].remote.interval;
+        start_time = feeds[tagname].remote.start_time;
+        interval = feeds[tagname].remote.interval;
       }
         
-      if (feeds[name].local.exists && !feeds[name].remote.exists) {
+      if (feeds[tagname].local.exists && !feeds[tagname].remote.exists) {
         feedlocation = "Local";
-        action = "<button class='btn btn-small upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
+        action = "<button class='btn btn-small upload' tagname='"+tagname+"'><i class='icon-arrow-right' ></i> Upload</button>";
             
-        start_time = feeds[name].local.start_time;
-        interval = feeds[name].local.interval;
+        start_time = feeds[tagname].local.start_time;
+        interval = feeds[tagname].local.interval;
       }
         
-      if (feeds[name].local.start_time==feeds[name].remote.start_time && feeds[name].local.interval==feeds[name].remote.interval) {
+      if (feeds[tagname].local.start_time==feeds[tagname].remote.start_time && feeds[tagname].local.interval==feeds[tagname].remote.interval) {
         feedlocation = "Both";
             
-        start_time = feeds[name].local.start_time;
-        interval = feeds[name].local.interval;
+        start_time = feeds[tagname].local.start_time;
+        interval = feeds[tagname].local.interval;
       }
         
-      if (feeds[name].local.start_time==feeds[name].remote.start_time && feeds[name].local.interval==feeds[name].remote.interval) {
-        if (feeds[name].local.npoints>feeds[name].remote.npoints) {
+      if (feeds[tagname].local.start_time==feeds[tagname].remote.start_time && feeds[tagname].local.interval==feeds[tagname].remote.interval) {
+        if (feeds[tagname].local.npoints>feeds[tagname].remote.npoints) {
           tr = "<tr class='info'>";
                 
-          status = "Local ahead of Remote by "+(feeds[name].local.npoints-feeds[name].remote.npoints)+" points";
-          action = "<button class='btn btn-small upload' name='"+name+"'><i class='icon-arrow-right' ></i> Upload</button>";
+          status = "Local ahead of Remote by "+(feeds[tagname].local.npoints-feeds[tagname].remote.npoints)+" points";
+          action = "<button class='btn btn-small upload' tagname='"+tagname+"'><i class='icon-arrow-right' ></i> Upload</button>";
                 
-        } else if (feeds[name].local.npoints<feeds[name].remote.npoints) {
+        } else if (feeds[tagname].local.npoints<feeds[tagname].remote.npoints) {
           tr = "<tr class='warning'>";
                 
-          status = "Local behind Remote by "+(feeds[name].remote.npoints-feeds[name].local.npoints)+" points";
-          action = "<button class='btn btn-small download' name='"+name+"'><i class='icon-arrow-left' ></i> Download</button>";
+          status = "Local behind Remote by "+(feeds[tagname].remote.npoints-feeds[tagname].local.npoints)+" points";
+          action = "<button class='btn btn-small download' tagname='"+tagname+"'><i class='icon-arrow-left' ></i> Download</button>";
                 
         } else {
           tr = "<tr class='success'>";
@@ -130,7 +130,8 @@ function jsonfeedsTohtml(feeds)
         
       out.push(tr);
       out.push("<td>"+feedlocation+"</td>");
-      out.push("<td>"+name+"</td>");
+      out.push("<td>"+feeds[tagname].local.tag+"</td>");
+      out.push("<td>"+feeds[tagname].local.name+"</td>");
         
       if (interval!=undefined) {
         out.push("<td>"+timeConverter(start_time)+"</td>");
@@ -144,13 +145,13 @@ function jsonfeedsTohtml(feeds)
         out.push("<td>n/a</td>");
       } 
         
-      out.push("<td class='status' name='"+name+"'>"+status+"</td>");
+      out.push("<td class='status' tagname='"+tagname+"'>"+status+"</td>");
         
-      //out += "<td>"+feeds[name].local.start_time+":"+feeds[name].local.interval+":"+feeds[name].local.npoints+"</td>";
+      //out += "<td>"+feeds[tagname].local.start_time+":"+feeds[tagname].local.interval+":"+feeds[tagname].local.npoints+"</td>";
       out.push("<td>"+action+"</td>");
        
       //out += "<td>"+feeds[z].remote.start_time+":"+feeds[z].remote.interval+":"+feeds[z].remote.npoints+"</td>";
-      //out += "<td><div class='syncprogress' style='width:"+Math.round(feeds[name].remote.npoints*0.0001)+"px'>"+feeds[name].local.start_time+":"+feeds[name].local.interval+":"+feeds[name].remote.npoints+"</div></td>";
+      //out += "<td><div class='syncprogress' style='width:"+Math.round(feeds[tagname].remote.npoints*0.0001)+"px'>"+feeds[tagname].local.start_time+":"+feeds[tagname].local.interval+":"+feeds[tagname].remote.npoints+"</div></td>";
       out.push("</tr>");
     }
     return out.join("");
@@ -262,9 +263,10 @@ $("#select-none").click(function(){
 });
 
 $("#all_feed_datas").on("click",".download",function(){
-    var name = $(this).attr("name");
-    $(".status[name='"+name+"']").html("Downloading...");
-    var request = "name="+name+"&tag="+feeds[name].remote.tag+"&remoteid="+feeds[name].remote.id+"&interval="+feeds[name].remote.interval+"&engine="+feeds[name].remote.engine+"&datatype="+feeds[name].remote.datatype;
+    var tagname = $(this).attr("tagname");
+    $(".status[tagname='"+tagname+"']").html("Downloading...");
+    let f = feeds[tagname].remote;
+    var request = "name="+f.name+"&tag="+f.tag+"&remoteid="+f.id+"&interval="+f.interval+"&engine="+f.engine+"&datatype="+f.datatype;
     $.ajax({
         url: path+"sync/download", 
         data: request,
@@ -275,16 +277,17 @@ $("#all_feed_datas").on("click",".download",function(){
                 // success
             } else { 
                 alert(result.message); 
-                $(".status[name='"+name+"']").html("");
+                $(".status[tagname='"+tagname+"']").html("");
             }
         } 
     });
 });
 
 $("#all_feed_datas").on("click",".upload",function(){
-    var name = $(this).attr("name");
-    $(".status[name='"+name+"']").html("Uploading...");
-    var request = "name="+name+"&tag="+feeds[name].local.tag+"&localid="+feeds[name].local.id+"&interval="+feeds[name].local.interval+"&engine="+feeds[name].local.engine+"&datatype="+feeds[name].local.datatype;
+    var tagname = $(this).attr("tagname");
+    $(".status[tagname='"+tagname+"']").html("Uploading...");
+    let f = feeds[tagname].local;
+    var request = "name="+f.name+"&tag="+f.tag+"&localid="+f.id+"&interval="+f.interval+"&engine="+f.engine+"&datatype="+f.datatype;
     $.ajax({
         url: path+"sync/upload", 
         data: request,
@@ -295,7 +298,7 @@ $("#all_feed_datas").on("click",".upload",function(){
                 // success
             } else { 
                 alert(result.message); 
-                $(".status[name='"+name+"']").html("");
+                $(".status[tagname='"+tagname+"']").html("");
             }
         } 
     });
