@@ -34,6 +34,12 @@
 
   <div id="time" style="float:right; padding-top:10px; padding-right:20px">Next update: 0s</div>
 
+  <br>
+  <div class="input-prepend input-append">
+  <button id="download-all" class="btn">Download All</button>
+  <button id="upload-all" class="btn">Upload All</button>
+  </div>
+
   <div class="alert alert-info"></div>
 
   <table class="table hide feed-view">
@@ -69,10 +75,15 @@ var path = "<?php echo $path; ?>";
 var feeds = [];
 var next_update = 0;
 
+var feeds_to_upload = [];
+var feeds_to_download = [];
+
 //given the json feeds list, generate the html string
 function jsonfeedsTohtml(feeds)
 {
     var out = [];
+    feeds_to_upload = [];
+    feeds_to_download = [];
     for (var tagname in feeds) {
     
       var action = "";
@@ -88,6 +99,7 @@ function jsonfeedsTohtml(feeds)
             
         start_time = feeds[tagname].remote.start_time;
         interval = feeds[tagname].remote.interval;
+        feeds_to_download.push(tagname)
       }
         
       if (feeds[tagname].local.exists && !feeds[tagname].remote.exists) {
@@ -96,6 +108,7 @@ function jsonfeedsTohtml(feeds)
             
         start_time = feeds[tagname].local.start_time;
         interval = feeds[tagname].local.interval;
+        feeds_to_upload.push(tagname)
       }
         
       if (feeds[tagname].local.start_time==feeds[tagname].remote.start_time && feeds[tagname].local.interval==feeds[tagname].remote.interval) {
@@ -111,13 +124,15 @@ function jsonfeedsTohtml(feeds)
                 
           status = "Local ahead of Remote by "+(feeds[tagname].local.npoints-feeds[tagname].remote.npoints)+" points";
           action = "<button class='btn btn-small upload' tagname='"+tagname+"'><i class='icon-arrow-right' ></i> Upload</button>";
-                
+          feeds_to_upload.push(tagname)
+          
         } else if (feeds[tagname].local.npoints<feeds[tagname].remote.npoints) {
           tr = "<tr class='warning'>";
                 
           status = "Local behind Remote by "+(feeds[tagname].remote.npoints-feeds[tagname].local.npoints)+" points";
           action = "<button class='btn btn-small download' tagname='"+tagname+"'><i class='icon-arrow-left' ></i> Download</button>";
-                
+          feeds_to_download.push(tagname)
+               
         } else {
           tr = "<tr class='success'>";
                 
@@ -262,8 +277,21 @@ $("#select-none").click(function(){
     });
 });
 
+// ----------------------------------------------------------
+// Download Feeds
+// ----------------------------------------------------------
+
+// Download single feed
 $("#all_feed_datas").on("click",".download",function(){
-    var tagname = $(this).attr("tagname");
+    download_feed($(this).attr("tagname"));
+});
+
+// Download all feeds
+$("#download-all").click(function(){
+    for (var z in feeds_to_download) download_feed(feeds_to_download[z]);
+});
+
+function download_feed(tagname) {
     $(".status[tagname='"+tagname+"']").html("Downloading...");
     let f = feeds[tagname].remote;
     var request = "name="+f.name+"&tag="+f.tag+"&remoteid="+f.id+"&interval="+f.interval+"&engine="+f.engine+"&datatype="+f.datatype;
@@ -281,10 +309,23 @@ $("#all_feed_datas").on("click",".download",function(){
             }
         } 
     });
+}
+
+// ----------------------------------------------------------
+// Upload Feeds
+// ----------------------------------------------------------
+
+// Upload single feed
+$("#all_feed_datas").on("click",".upload",function(){
+    upload_feed($(this).attr("tagname"));
 });
 
-$("#all_feed_datas").on("click",".upload",function(){
-    var tagname = $(this).attr("tagname");
+// Upload all feeds
+$("#upload-all").click(function(){
+    for (var z in feeds_to_upload) upload_feed(feeds_to_upload[z]);
+});
+
+function upload_feed(tagname){
     $(".status[tagname='"+tagname+"']").html("Uploading...");
     let f = feeds[tagname].local;
     var request = "name="+f.name+"&tag="+f.tag+"&localid="+f.id+"&interval="+f.interval+"&engine="+f.engine+"&datatype="+f.datatype;
@@ -302,7 +343,9 @@ $("#all_feed_datas").on("click",".upload",function(){
             }
         } 
     });
-});
+}
+
+// ----------------------------------------------------------
 
 $("#download-inputs").click(function(){
     $.ajax({
