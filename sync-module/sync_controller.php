@@ -201,7 +201,7 @@ function sync_controller()
         
         $remote = $sync->remote_load($session["userid"]);
                 
-        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&tag=".urlencode($tagf)."&name=".urlencode($name));
+        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&tag=".urlencode($tag)."&name=".urlencode($name));
         
         if (!$remote_id) {
             print "creating feed";
