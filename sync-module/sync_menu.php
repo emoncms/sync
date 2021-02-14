@@ -1,24 +1,31 @@
 <?php
-
-// setup menu item
-$menu['sidebar']['emoncms'][] = array(
-    'text' => _("Sync"),
-    'path' => 'sync/view',
-    'icon' => 'shuffle',
-    'data'=> array('sidebar' => '#sync'),
-    'order'=>'b4'
-);
-
-// sub menu
-$menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('Sync Inputs'),
-    'path' => 'sync/view/inputs',
-);
-$menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('Sync Feeds'),
-    'path' => 'sync/view/feeds',
-);
-$menu['sidebar']['includes']['emoncms']['sync'][] = array(
-    'text' => _('Sync Dashboards'),
-    'path' => 'sync/view/dashboards',
-);
+global $session;
+if ($session["write"]) {
+    $menu["setup"]["l2"]['sync'] = array(
+        "name"=>_("Sync"),
+        "href"=>"sync/view", 
+        "order"=>9, 
+        "icon"=>"shuffle",
+        
+        "l3"=>array(
+            "inputs"=>array(
+                "name"=>_("Sync Inputs"),
+                "href"=>"sync/view/inputs", 
+                "order"=>1, 
+                "icon"=>"input"
+            ),
+            "feeds"=>array(
+                "name"=>_("Sync Feeds"),
+                "href"=>"sync/view/feeds", 
+                "order"=>2, 
+                "icon"=>"format_list_bulleted"
+            ),
+            "dashboard"=>array(
+                "name"=>_("Sync Dashboards"),
+                "href"=>"sync/view/dashboards", 
+                "order"=>3, 
+                "icon"=>"dashboard"
+            )
+        )
+    );
+}
