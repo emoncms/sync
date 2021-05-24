@@ -3,8 +3,8 @@ global $session;
 if ($session["write"]) {
     $menu["setup"]["l2"]['sync'] = array(
         "name"=>_("Sync"),
-        "href"=>"sync/view/feeds",
-        "href_active"=>true,
+        "href"=>"sync",
+        "href_active"=>"sync/view/feeds",
         "order"=>9, 
         "icon"=>"shuffle",
         
