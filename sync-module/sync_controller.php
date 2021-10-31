@@ -149,7 +149,7 @@ function sync_controller()
         if (!$local_id = $feed->exists_tag_name($session["userid"],$tag,$name)) {
             $options = new stdClass();
             if ($engine==Engine::PHPFINA) $options->interval = $interval;
-            $result = $feed->create($session['userid'],$tag,$name,$datatype,$engine,$options);
+            $result = $feed->create($session['userid'],$tag,$name,$engine,$options);
             $local_id = $result["feedid"];
         }
         
