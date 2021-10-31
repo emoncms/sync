@@ -63,7 +63,6 @@ function sync_controller()
                 $l->name = $f->name;
                 
                 $l->engine = isset($f->engine) ? $f->engine: '';
-                $l->datatype = isset($f->datatype) ? $f->datatype: '';
                 $l->start_time = isset($f->start_time) ? $f->start_time: ''; 
                 $l->interval = isset($f->interval) ? $f->interval: ''; 
                 $l->npoints = isset($f->npoints) ? $f->npoints: ''; 
@@ -93,7 +92,6 @@ function sync_controller()
                 $r->name = $f->name;
                 
                 $r->engine = isset($f->engine) ? $f->engine: '';
-                $r->datatype = isset($f->datatype) ? $f->datatype: '';
                 $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
                 $r->interval = isset($f->interval) ? $f->interval: ''; 
                 $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
@@ -139,9 +137,6 @@ function sync_controller()
         if (!isset($_GET['engine'])) return emoncms_error("missing engine parameter");
         $engine = (int) $_GET['engine'];
         
-        if (!isset($_GET['datatype'])) return emoncms_error("missing datatype parameter");
-        $datatype = (int) $_GET['datatype'];
-        
         // Check that engine is supported
         if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
         
@@ -163,7 +158,6 @@ function sync_controller()
             "remote_server"=>$remote->host,
             "remote_id"=>$remote_id,
             "engine"=>$engine,
-            "datatype"=>$datatype,
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));
@@ -210,7 +204,6 @@ function sync_controller()
             $url .= "apikey=".$remote->apikey_write;
             $url .= "&name=".urlencode($name);
             $url .= "&tag=".urlencode($tag);
-            $url .= "&datatype=".DataType::REALTIME;
             $url .= "&engine=".$engine;
             $url .= "&options=".json_encode(array("interval"=>$interval));
 
@@ -229,7 +222,6 @@ function sync_controller()
             "remote_server"=>$remote->host,
             "remote_id"=>$remote_id,
             "engine"=>$engine,
-            "datatype"=>$datatype,
             "remote_apikey"=>$remote->apikey_write
         );
         $redis->lpush("sync-queue",json_encode($params));

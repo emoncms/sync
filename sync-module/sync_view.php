@@ -294,7 +294,7 @@ $("#download-all").click(function(){
 function download_feed(tagname) {
     $(".status[tagname='"+tagname+"']").html("Downloading...");
     let f = feeds[tagname].remote;
-    var request = "name="+f.name+"&tag="+f.tag+"&remoteid="+f.id+"&interval="+f.interval+"&engine="+f.engine+"&datatype="+f.datatype;
+    var request = "name="+f.name+"&tag="+f.tag+"&remoteid="+f.id+"&interval="+f.interval+"&engine="+f.engine;
     $.ajax({
         url: path+"sync/download", 
         data: request,
@@ -328,7 +328,7 @@ $("#upload-all").click(function(){
 function upload_feed(tagname){
     $(".status[tagname='"+tagname+"']").html("Uploading...");
     let f = feeds[tagname].local;
-    var request = "name="+f.name+"&tag="+f.tag+"&localid="+f.id+"&interval="+f.interval+"&engine="+f.engine+"&datatype="+f.datatype;
+    var request = "name="+f.name+"&tag="+f.tag+"&localid="+f.id+"&interval="+f.interval+"&engine="+f.engine;
     $.ajax({
         url: path+"sync/upload", 
         data: request,
