@@ -1,6 +1,6 @@
 {
     "name"         : "Sync",
-    "version"      : "2.1.1",
+    "version"      : "2.1.2",
     "location"     : "/opt/emoncms/modules",
     "branches_available": ["stable","master"],
     "requires": []
