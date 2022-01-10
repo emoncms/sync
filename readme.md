@@ -1,8 +1,14 @@
 # Sync module for emoncms
 
-Download and upload feed between a local and remote emoncms server
+Download and upload feeds between a local and remote emoncms server
 
 ![syncmodule.png](syncmodule.png)
+
+1. Login to your local installation of emoncms.
+2. Navigate to Setup > Sync
+3. Enter your emoncms.org username and password to bring up the list of available feeds.
+4. Click Download all, or download feeds individually
+5. Browse the feeds locally, that's it!
 
 ### Automatic EmonPi, Emonbase Update
 
