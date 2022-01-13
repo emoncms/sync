@@ -10,6 +10,8 @@ Download and upload feeds between a local and remote emoncms server
 4. Click Download all, or download feeds individually
 5. Browse the feeds locally, that's it!
 
+You may also be interested in the python based emoncms backup utility if you do not wish to setup a local emoncms instance to download/backup/archive emoncms data from a remote server such as emoncms.org: https://github.com/emoncms/usefulscripts/tree/master/backup_py
+
 ### Automatic EmonPi, Emonbase Update
 
 The Sync module is included in the default EmonPi/EmonBase software stack as of 26th April 2018. If you do not see the sync module under the emoncms Setup tab try running EmonPi or EmonBase update from the Administration page on your EmonPi/EmonBase.
