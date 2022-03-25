@@ -24,14 +24,14 @@ The Sync module is included in the default EmonPi/EmonBase software stack as of 
     
 The setting **$home_dir** or **$emoncms_dir** in emoncms settings.php also need to be set to reflect your system.    
 
-Install the sync module into home folder (e.g. /home/pi) directory (rather than emoncms/Modules):
+Install the sync module to /opt/emoncms/modules (you may need to create those directories first):
 
-    cd ~/
+    cd /opt/emoncms/modules
     git clone https://github.com/emoncms/sync.git
 
-Symlink the web part of the sync module into emoncms/Modules, if not using Raspberry Pi replace 'pi' with your home folder name:
+Symlink the web part of the sync module to the public html emoncms modules directory:
 
-    ln -s /home/pi/sync/sync-module /var/www/emoncms/Modules/sync
+    ln -s /opt/emoncms/modules/sync/sync-module /var/www/emoncms/Modules/sync
     
 ### Install Service Runner
 
@@ -44,6 +44,5 @@ The sync module downloads or uploads data using a script that runs in the backgr
 
 To run the sync process manually:
 
-    cd ~/
-    cd sync
+    cd /opt/emoncms/modules/sync
     sudo php sync_run.php
