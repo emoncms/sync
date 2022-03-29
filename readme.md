@@ -33,6 +33,8 @@ Symlink the web part of the sync module to the public html emoncms modules direc
 
     ln -s /opt/emoncms/modules/sync/sync-module /var/www/emoncms/Modules/sync
     
+Update the emoncms mysql database via the Admin > Update interface. Click on 'Update Database' next to the 'Update Database Only' option.
+    
 ### Install Service Runner
 
 The sync module downloads or uploads data using a script that runs in the background. This script can be automatically called using the emoncms service runner. See [Emoncms: Service-runner installation details here](https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md).
