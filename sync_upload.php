@@ -48,7 +48,7 @@ foreach ($feeds as $tagname=>$feed){
             // local ahead of remote
             echo $tagname."\n";
             if ($local->engine==Engine::PHPFINA) {
-                phpfina_upload($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote->id,$apikey_read);        
+                phpfina_upload($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote->id,$apikey_write);        
             }
         } /*else if ($local->npoints<$remote->npoints) {
             echo "local behind remote";
