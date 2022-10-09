@@ -122,7 +122,7 @@ function phpfina_download($local_datadir,$local_id,$remote_server,$remote_id,$re
     
     $lastvalue = false;
     
-    if ($dnsize>0) {
+    if ($dnsize>=4) {
         // Last time and value
         $d = substr($data,strlen($data)-4,4);
         $val = unpack("f",$d);

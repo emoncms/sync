@@ -21,10 +21,11 @@ class Sync
     private $total_timeout = 10;
     private $log;
 
-    public function __construct($mysqli)
+    public function __construct($mysqli,$feed)
     {
         $this->mysqli = $mysqli;
         $this->log = new EmonLogger(__FILE__);
+        $this->feed = $feed;
     }
     
     public function remote_load($userid)
@@ -75,6 +76,80 @@ class Sync
         } else {
             return array("success"=>false, "message"=>"Authentication failure, username or password incorrect");
         }
+    }
+    
+    public function get_feed_list($userid) {
+
+        // 1. Load local feeds
+        $localfeeds = json_decode(json_encode($this->feed->get_user_feeds_with_meta($userid)));
+        // 2. Load remote settings
+        $remote = $this->remote_load($userid);
+        if (is_array($remote) && isset($remote['success']) && $remote['success']==false) return false;
+        // 3. Load remote feeds
+        $remotefeeds = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
+        
+        $feeds = array();
+        
+        // Load all local feeds into feed list array
+        foreach ($localfeeds as $f) {
+            if (in_array($f->engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) {
+                $l = new stdClass();
+                $l->exists = true;
+                $l->id = (int) $f->id;
+                $l->tag = $f->tag;
+                $l->name = $f->name;
+                
+                $l->engine = isset($f->engine) ? $f->engine: '';
+                $l->start_time = isset($f->start_time) ? $f->start_time: ''; 
+                $l->interval = isset($f->interval) ? $f->interval: ''; 
+                $l->npoints = isset($f->npoints) ? $f->npoints: ''; 
+                
+                // Create empty remote feed entry
+                // may be overwritten in the next step
+                $r = new stdClass();
+                $r->exists = false;
+                $r->start_time = "";
+                $r->interval = "";
+                $r->npoints = "";
+                
+                $feeds[$f->tag."/".$f->name] = new stdClass();
+                $feeds[$f->tag."/".$f->name]->local = $l;
+                $feeds[$f->tag."/".$f->name]->remote = $r;
+            }
+        }
+
+        // Load all remote feeds into feed list array
+        foreach ($remotefeeds as $f) {
+            if (in_array($f->engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) {
+                // Move remote meta under remote heading
+                $r = new stdClass();
+                $r->exists = true;
+                $r->id = (int) $f->id;
+                $r->tag = $f->tag;
+                $r->name = $f->name;
+                
+                $r->engine = isset($f->engine) ? $f->engine: '';
+                $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
+                $r->interval = isset($f->interval) ? $f->interval: ''; 
+                $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
+                
+                // Only used if no local feed
+                $l = new stdClass();
+                $l->exists = false;
+                $l->tag = $f->tag;
+                $l->name = $f->name;
+                $l->start_time = "";
+                $l->interval = "";
+                $l->npoints = "";
+                
+                if (!isset($feeds[$f->tag."/".$f->name])) {
+                    $feeds[$f->tag."/".$f->name] = new stdClass();
+                    $feeds[$f->tag."/".$f->name]->local = $l;
+                }
+                $feeds[$f->tag."/".$f->name]->remote = $r;
+            }
+        }
+        return $feeds;
     }
     
     private function request($method,$url,$body)
