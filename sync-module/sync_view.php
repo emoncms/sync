@@ -77,6 +77,7 @@ var next_update = 0;
 
 var feeds_to_upload = [];
 var feeds_to_download = [];
+var feed_list_refresh_interval = false;
 
 //given the json feeds list, generate the html string
 function jsonfeedsTohtml(feeds)
@@ -214,6 +215,9 @@ function remoteLoad()
             if (subaction=="feeds") {
               $(".feed-view").show();
               syncList();
+              
+              clearInterval(feed_list_refresh_interval);
+              feed_list_refresh_interval = setInterval(syncList,10000);
             }
             if (subaction=="inputs") {
               $(".input-view").show();
@@ -235,7 +239,7 @@ $("#page").html(subaction.charAt(0).toUpperCase() + subaction.slice(1));
 if (redis_enabled) {
     $(".alert").show().html("Connecting to remote emoncms server...");
     remoteLoad();
-    setInterval(syncList,10000);
+    
 }
 
 
@@ -246,6 +250,8 @@ $("#remote-save").click(function(){
     
     $(".feed-view").hide();
     $(".alert").show().html("Connecting to remote emoncms server...");
+    
+    clearInterval(feed_list_refresh_interval);
     
     $.ajax({ 
         type: "POST",
