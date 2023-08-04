@@ -2,7 +2,8 @@
 // Get script location
 list($scriptPath) = get_included_files();
 $scriptPath = str_replace("/sync_upload.php","",$scriptPath);
-chdir($scriptPath);
+// print $scriptPath;
+// chdir($scriptPath);
 require "lib/phpfina.php";
 require "lib/phptimeseries.php";
 
@@ -41,17 +42,19 @@ foreach ($feeds as $tagname=>$feed){
         // Create remote feeds
         if ($local->engine==Engine::PHPFINA) {
             print "creating feed\n";
-            $url = $remote->host."/feed/create.json?";
-            $url .= "apikey=".$remote->apikey_write;
+            print json_encode($local)."\n";
+
+            $url = $host."/feed/create.json?";
+            $url .= "apikey=".$apikey_write;
             $url .= "&name=".urlencode($local->name);
             $url .= "&tag=".urlencode($local->tag);
-            $url .= "&engine=".$engine;
-            $url .= "&options=".json_encode(array("interval"=>$interval));
+            $url .= "&engine=5";
+            $url .= "&options=".json_encode(array("interval"=>$local->interval));
 
             $result = json_decode(file_get_contents($url));
             if ($result->success) {
                 $remote_id = $result->feedid;
-                phpfina_upload($settings['feed']['phpfina']['datadir'],$local->id,$host,$remoteid,$apikey_write);
+                phpfina_upload($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote_id,$apikey_write);
             }
         }
     }
