@@ -21,10 +21,15 @@
 
   <div class="input-prepend input-append">
     <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
-    <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
-    <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
-    <span class="add-on">Apikey</span><input id="remote-apikey" type="text" style="width:250px" disabled >
-    <button id="remote-save" class="btn">Connect</button>
+    <span id="login_auth">
+      <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
+      <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
+      <button id="remote-save" class="btn">Connect</button>
+    </span>
+    <span id="apikey_div" style="display:none">
+      <span class="add-on">Apikey</span><input id="remote-apikey" type="text" style="width:250px" disabled >
+      <button id="remote-change" class="btn">Change</button>
+    </span>
   </div>
 
   <!--
@@ -189,7 +194,7 @@ function syncList()
       async: true, 
       success(result){
         if (result.success!=undefined) {
-          alert(result.message)
+          $(".alert").html(result.message);
           return false;
         }
         out=jsonfeedsTohtml(result);
@@ -230,6 +235,14 @@ function remoteLoad()
             }
             if (subaction=="dashboards") {
               $(".dashboard-view").show();
+            }
+            
+            if (result.username==undefined && result.apikey_write!="") {
+                $("#login_auth").hide();
+                $("#apikey_div").show();
+            } else {
+                $("#login_auth").show();
+                $("#apikey_div").hide();
             }
         }
       },
@@ -287,6 +300,11 @@ $("#select-none").click(function(){
     $(".feed-select-checkbox").each(function(){
         $(this)[0].checked = false;
     });
+});
+
+$("#remote-change").click(function() {
+    $("#login_auth").show();
+    $("#apikey_div").hide();
 });
 
 // ----------------------------------------------------------
