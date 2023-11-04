@@ -20,6 +20,7 @@ class Sync
     private $connect_timeout = 5;
     private $total_timeout = 10;
     private $log;
+    private $feed;
 
     public function __construct($mysqli,$feed)
     {
