@@ -84,9 +84,14 @@ class Sync
         $localfeeds = json_decode(json_encode($this->feed->get_user_feeds_with_meta($userid)));
         // 2. Load remote settings
         $remote = $this->remote_load($userid);
-        if (is_array($remote) && isset($remote['success']) && $remote['success']==false) return false;
+        if (is_array($remote) && isset($remote['success']) && $remote['success']==false) {
+            return array("success"=>false, "message"=>"Could not load remote configuration");
+        }
         // 3. Load remote feeds
         $remotefeeds = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
+        if (!$remotefeeds) {
+            return array("success"=>false, "message"=>"No response from remote server");
+        }
         
         $feeds = array();
         

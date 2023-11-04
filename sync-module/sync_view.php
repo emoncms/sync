@@ -23,6 +23,7 @@
     <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
     <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px" >
     <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px" >
+    <span class="add-on">Apikey</span><input id="remote-apikey" type="text" style="width:250px" disabled >
     <button id="remote-save" class="btn">Connect</button>
   </div>
 
@@ -187,6 +188,10 @@ function syncList()
       dataType: 'json', 
       async: true, 
       success(result){
+        if (result.success!=undefined) {
+          alert(result.message)
+          return false;
+        }
         out=jsonfeedsTohtml(result);
         feeds=result;
         $("#all_feed_datas").html(out);
@@ -212,6 +217,7 @@ function remoteLoad()
             $(".alert").hide();
             $("#remote-host").val(result.host);
             $("#remote-username").val(result.username);
+            $("#remote-apikey").val(result.apikey_write);
             if (subaction=="feeds") {
               $(".feed-view").show();
               syncList();
