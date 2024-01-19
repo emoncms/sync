@@ -17,8 +17,8 @@ defined('EMONCMS_EXEC') or die('Restricted access');
 class Sync
 {
     private $mysqli;
-    private $connect_timeout = 5;
-    private $total_timeout = 10;
+    private $connect_timeout = 2;
+    private $total_timeout = 6;
     private $log;
     private $feed;
 
@@ -51,6 +51,7 @@ class Sync
         $username = $this->mysqli->real_escape_string($username);        
         
         // Authentication request to target server
+        $password = urlencode($password);
         $result = $this->request("POST",$host."/user/auth.json","username=$username&password=$password");
         $this->log->warn($result);
         $result = json_decode($result);
@@ -89,7 +90,8 @@ class Sync
             return array("success"=>false, "message"=>"Could not load remote configuration");
         }
         // 3. Load remote feeds
-        $remotefeeds = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
+        
+        $remotefeeds = json_decode($this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read,false));
         if (!$remotefeeds) {
             return array("success"=>false, "message"=>"No response from remote server");
         }
@@ -126,40 +128,42 @@ class Sync
 
         // Load all remote feeds into feed list array
         foreach ($remotefeeds as $f) {
-            if (in_array($f->engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) {
-                // Move remote meta under remote heading
-                $r = new stdClass();
-                $r->exists = true;
-                $r->id = (int) $f->id;
-                $r->tag = $f->tag;
-                $r->name = $f->name;
-                
-                $r->engine = isset($f->engine) ? $f->engine: '';
-                $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
-                $r->interval = isset($f->interval) ? $f->interval: ''; 
-                $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
-                
-                // Only used if no local feed
-                $l = new stdClass();
-                $l->exists = false;
-                $l->tag = $f->tag;
-                $l->name = $f->name;
-                $l->start_time = "";
-                $l->interval = "";
-                $l->npoints = "";
-                
-                if (!isset($feeds[$f->tag."/".$f->name])) {
-                    $feeds[$f->tag."/".$f->name] = new stdClass();
-                    $feeds[$f->tag."/".$f->name]->local = $l;
+            if (isset($f->engine)) {
+                if (in_array($f->engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) {
+                    // Move remote meta under remote heading
+                    $r = new stdClass();
+                    $r->exists = true;
+                    $r->id = (int) $f->id;
+                    $r->tag = $f->tag;
+                    $r->name = $f->name;
+                    
+                    $r->engine = isset($f->engine) ? $f->engine: '';
+                    $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
+                    $r->interval = isset($f->interval) ? $f->interval: ''; 
+                    $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
+                    
+                    // Only used if no local feed
+                    $l = new stdClass();
+                    $l->exists = false;
+                    $l->tag = $f->tag;
+                    $l->name = $f->name;
+                    $l->start_time = "";
+                    $l->interval = "";
+                    $l->npoints = "";
+                    
+                    if (!isset($feeds[$f->tag."/".$f->name])) {
+                        $feeds[$f->tag."/".$f->name] = new stdClass();
+                        $feeds[$f->tag."/".$f->name]->local = $l;
+                    }
+                    $feeds[$f->tag."/".$f->name]->remote = $r;
                 }
-                $feeds[$f->tag."/".$f->name]->remote = $r;
             }
         }
         return $feeds;
     }
     
     private function request($method,$url,$body)
-    {
+    {   
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         //curl_setopt($curl, CURLOPT_HEADER, true);
