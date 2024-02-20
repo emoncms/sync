@@ -16,6 +16,12 @@ You may also be interested in the python based emoncms backup utility if you do 
 
 The Sync module is included in the default EmonPi/EmonBase software stack as of 26th April 2018. If you do not see the sync module under the emoncms Setup tab try running EmonPi or EmonBase update from the Administration page on your EmonPi/EmonBase.
 
+## Automatic sync 
+
+By default the sync module will only sync when the user clicks 'sync' in the web interface, to enable automatic periodic sync add this entry to crontab using `crontab -e` e.g to sync every 1 hr
+
+`0 * * * * php /opt/emoncms/modules/sync/sync_upload.php`
+
 ### Manual Linux Installation
 
 **Note:** The sync module has hard coded paths for the emoncms directory location that point to: /var/www/emoncms. If your installation has emoncms installed in /var/www/html/emoncms you will need a symlink to /var/www/emoncms:
