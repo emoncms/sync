@@ -91,9 +91,10 @@ class Sync
         }
         // 3. Load remote feeds
         
-        $remotefeeds = json_decode($this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read,false));
-        if (!$remotefeeds) {
-            return array("success"=>false, "message"=>"No response from remote server");
+        $result_str = $this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read,false);
+        $remotefeeds = json_decode($result_str);
+        if ($remotefeeds === null) {
+            return array("success"=>false, "message"=>"No response from remote server: $result_str");
         }
         
         $feeds = array();
