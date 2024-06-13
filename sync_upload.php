@@ -128,7 +128,6 @@ while(true) {
     $checksum = crc32($upload_str);
     $upload_str .= pack("I",$checksum);
 
-    print "\n\n";
     $result = request("$host/feed/sync?apikey=$apikey_write",$upload_str);
 
     $result = json_decode($result);
