@@ -30,6 +30,7 @@ $feeds = $sync->get_feed_list($userid);
 $remote_meta = array();
 foreach ($feeds as $tagname=>$feed){
     $remote = $feeds[$tagname]->remote;
+    if (!isset($remote->id)) continue;
     $remote_meta[$remote->id] = $remote;
 }
 
@@ -45,6 +46,8 @@ while(true) {
             
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
+        
+        if (!isset($remote->id)) continue;
         
         // We dont strictly need to map these here as these are linked objects..
         $remote->start_time = $remote_meta[$remote->id]->start_time;
@@ -120,7 +123,7 @@ while(true) {
     }
 
     print "upload size: ".strlen($upload_str)."\n";
-
+    
     if (strlen($upload_str)==0) {
         die("nothing to upload");
     }
@@ -128,11 +131,11 @@ while(true) {
     $checksum = crc32($upload_str);
     $upload_str .= pack("I",$checksum);
 
-    $result = request("$host/feed/sync?apikey=$apikey_write",$upload_str);
+    $result_sync = request("$host/feed/sync?apikey=$apikey_write",$upload_str);
 
-    $result = json_decode($result);
+    $result = json_decode($result_sync);
     if ($result==null) {
-       die("error parsing response from server");
+       die("error parsing response from server: $result_sync");
     }
 
     if ($result->success==false) {

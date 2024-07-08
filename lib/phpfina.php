@@ -219,12 +219,19 @@ function get_meta($dir,$id)
 function request($url,$data)
 {
     $curl = curl_init($url);
+
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT,5);
     curl_setopt($curl, CURLOPT_TIMEOUT,10);
+
+    $headers = [
+        'Content-Type: application/octet-stream'
+    ];
+
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
     $curl_response = curl_exec($curl);
     curl_close($curl);
