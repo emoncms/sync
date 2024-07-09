@@ -47,7 +47,12 @@ while(true) {
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
         
-        if (!isset($remote->id)) continue;
+        if (!isset($remote->id)) {
+            // This skips all feeds that do not exist on the remote server
+            // Remote server feeds should be created when doing the sync
+            // module selective manual upload
+            continue;
+        }
         
         // We dont strictly need to map these here as these are linked objects..
         $remote->start_time = $remote_meta[$remote->id]->start_time;
@@ -64,102 +69,93 @@ while(true) {
             // Create remote feeds
         }
         
-        else if ($remote->npoints==0 || ($local->start_time==$remote->start_time && $local->interval==$remote->interval)) {
-            // echo "both";
+        else if ($local->exists && $remote->exists) {
             
+            // local ahead of remote
             if ($local->npoints>$remote->npoints) {
-                // local ahead of remote
-                // echo $tagname."\n";
+                
                 if ($local->engine==Engine::PHPFINA) {
-                    // echo "phpfina_upload: $local->id,$remote->id\n";
+                
+                    // Allow upload if remote is blank or if meta match
+                    if ($remote->npoints==0 || ($local->start_time==$remote->start_time && $local->interval==$remote->interval)) {
                     
-                    // uploaded 1 point, to_meta = 1, from_meta = 5, we need to upload 4 points so:
-                    $npoints =  $local->npoints - $remote->npoints;
-                    $data_start = $remote->npoints*4;
+                        $npoints =  $local->npoints - $remote->npoints;
+                        $data_start = $remote->npoints*4;
 
-                    // limit by upload limit
-                    $bytes_available = $max_upload_size - strlen($upload_str) - 20;
-                    if ($bytes_available>0) {
-                        // print "bytes_available: ".($bytes_available)."\n";
+                        // limit by upload limit
+                        $bytes_available = $max_upload_size - strlen($upload_str) - 20;
+                        if ($bytes_available>0) {
 
-                        $available_npoints = floor($bytes_available/4);
-                        if ($available_npoints<$npoints) $npoints = $available_npoints;
+                            $available_npoints = floor($bytes_available/4);
+                            if ($available_npoints<$npoints) $npoints = $available_npoints;
 
-                        if ($npoints>0) {
-                            // Read binary data
-                            $fh = fopen($settings['feed']['phpfina']['datadir'].$local->id.".dat", 'rb');
-                            fseek($fh,$data_start);
-                            $data_str = fread($fh,$npoints*4);
-                            fclose($fh);
-                            
-                            // Verify data_str len must be multiple of 4
-                            // cut off any extra bytes - this should not happen
-                            if (strlen($data_str) % 4 != 0) {
-                                $data_str = substr($data_str,0,floor(strlen($data_str)/4)*4);
+                            if ($npoints>0) {
+                                // Read binary data
+                                $fh = fopen($settings['feed']['phpfina']['datadir'].$local->id.".dat", 'rb');
+                                fseek($fh,$data_start);
+                                $data_str = fread($fh,$npoints*4);
+                                fclose($fh);
+                                
+                                // Verify data_str len must be multiple of 4
+                                // cut off any extra bytes - this should not happen
+                                if (strlen($data_str) % 4 != 0) {
+                                    $data_str = substr($data_str,0,floor(strlen($data_str)/4)*4);
+                                }
+
+                                // Data length for this feed including 20 byte meta
+                                $upload_str .= pack("I",strlen($data_str)+20);
+                                // Meta part (16 bytes)
+                                $upload_str .= pack("I",$remote->id);
+                                $upload_str .= pack("I",$local->start_time);
+                                $upload_str .= pack("I",$local->interval);
+                                $upload_str .= pack("I",$data_start);
+                                // Data part (variable length)
+                                $upload_str .= $data_str;
                             }
-
-                            // Data length for this feed including 20 byte meta
-                            $upload_str .= pack("I",strlen($data_str)+20);
-                            // Meta part (16 bytes)
-                            $upload_str .= pack("I",$remote->id);
-                            $upload_str .= pack("I",$local->start_time);
-                            $upload_str .= pack("I",$local->interval);
-                            $upload_str .= pack("I",$data_start);
-                            // Data part (variable length)
-                            $upload_str .= $data_str;
                         }
                     }
                 }
                 
                 if ($local->engine==Engine::PHPTIMESERIES) {
 
-                    $npoints =  $local->npoints - $remote->npoints;
-                    $data_start = $remote->npoints*9;
+                    // Allow upload if remote is blank or if meta match
+                    if ($remote->npoints==0 || ($local->start_time==$remote->start_time)) {
 
-                    // limit by upload limit
-                    $bytes_available = $max_upload_size - strlen($upload_str) - 12;
-                    if ($bytes_available>0) {
+                        $npoints =  $local->npoints - $remote->npoints;
+                        $data_start = $remote->npoints*9;
 
-                        $available_npoints = floor($bytes_available/9);
-                        if ($available_npoints<$npoints) $npoints = $available_npoints;
+                        // limit by upload limit
+                        $bytes_available = $max_upload_size - strlen($upload_str) - 12;
+                        if ($bytes_available>0) {
 
-                        if ($npoints>0) {
-                            // Read binary data
-                            $fh = fopen($settings['feed']['phptimeseries']['datadir']."feed_".$local->id.".MYD", 'rb');
-                            fseek($fh,$data_start);
-                            $data_str = fread($fh,$npoints*9);
-                            fclose($fh);
-                            
-                            // Verify data_str len must be multiple of 4
-                            // cut off any extra bytes - this should not happen
-                            if (strlen($data_str) % 9 != 0) {
-                                $data_str = substr($data_str,0,floor(strlen($data_str)/9)*9);
+                            $available_npoints = floor($bytes_available/9);
+                            if ($available_npoints<$npoints) $npoints = $available_npoints;
+
+                            if ($npoints>0) {
+                                // Read binary data
+                                $fh = fopen($settings['feed']['phptimeseries']['datadir']."feed_".$local->id.".MYD", 'rb');
+                                fseek($fh,$data_start);
+                                $data_str = fread($fh,$npoints*9);
+                                fclose($fh);
+                                
+                                // Verify data_str len must be multiple of 4
+                                // cut off any extra bytes - this should not happen
+                                if (strlen($data_str) % 9 != 0) {
+                                    $data_str = substr($data_str,0,floor(strlen($data_str)/9)*9);
+                                }
+
+                                // Data length for this feed including 12 byte meta
+                                $upload_str .= pack("I",strlen($data_str)+12);
+                                // Meta part (16 bytes)
+                                $upload_str .= pack("I",$remote->id);
+                                $upload_str .= pack("I",$data_start);
+                                // Data part (variable length)
+                                $upload_str .= $data_str;
                             }
-
-                            // Data length for this feed including 12 byte meta
-                            $upload_str .= pack("I",strlen($data_str)+12);
-                            // Meta part (16 bytes)
-                            $upload_str .= pack("I",$remote->id);
-                            $upload_str .= pack("I",$data_start);
-                            // Data part (variable length)
-                            $upload_str .= $data_str;
                         }
                     }
                 }
-                
-                
-            } /*else if ($local->npoints<$remote->npoints) {
-                echo "local behind remote";
-                
-                if ($local->engine==Engine::PHPFINA) {
-                    $lastvalue = phpfina_download($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote->id,$apikey_read);
-                    if ($lastvalue) $redis->hMset("feed:".$local->id, $lastvalue);
-                }
-                
-                
-            } else {
-                echo " local and remote the same";
-            }*/
+            }
         }
     }
 
