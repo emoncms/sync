@@ -98,11 +98,14 @@ while(true) {
                                 $data_str = substr($data_str,0,floor(strlen($data_str)/4)*4);
                             }
 
+                            // Data length for this feed including 20 byte meta
+                            $upload_str .= pack("I",strlen($data_str)+20);
+                            // Meta part (16 bytes)
                             $upload_str .= pack("I",$remote->id);
                             $upload_str .= pack("I",$local->start_time);
                             $upload_str .= pack("I",$local->interval);
-                            $upload_str .= pack("I",$data_start); 
-                            $upload_str .= pack("I",strlen($data_str));
+                            $upload_str .= pack("I",$data_start);
+                            // Data part (variable length)
                             $upload_str .= $data_str;
                         }
                     }
