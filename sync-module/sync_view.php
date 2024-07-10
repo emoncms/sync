@@ -199,6 +199,7 @@ function syncList()
       success(result){
         if (result.success!=undefined) {
           $(".alert").html(result.message);
+          $(".alert").show();
           return false;
         }
         out=jsonfeedsTohtml(result);
