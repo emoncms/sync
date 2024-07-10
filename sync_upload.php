@@ -2,6 +2,10 @@
 // Get script location
 list($scriptPath) = get_included_files();
 $scriptPath = str_replace("/sync_upload.php","",$scriptPath);
+
+$fp = fopen("/tmp/sync-upload-lock", "w");
+if (! flock($fp, LOCK_EX | LOCK_NB)) { echo "Already running\n"; die; }
+
 chdir($scriptPath);
 require "lib/phpfina.php";
 require "lib/phptimeseries.php";
@@ -30,7 +34,7 @@ $feeds = $sync->get_feed_list($userid);
 
 if (isset($argv[1]) && $argv[1]=="all") {
     print "Sync all\n";
-    foreach ($feeds as $tagname=>$feed){
+    foreach ($feeds as $tagname=>$f){
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
 
@@ -57,12 +61,9 @@ if (isset($argv[1]) && $argv[1]=="all") {
     }
 }
 
-// Copy remote meta to array by id
-$remote_meta = array();
-foreach ($feeds as $tagname=>$feed){
-    $remote = $feeds[$tagname]->remote;
-    if (!isset($remote->id)) continue;
-    $remote_meta[$remote->id] = $remote;
+$remote_id_map = array();
+foreach ($feeds as $tagname=>$f) {
+    $remote_id_map[$feeds[$tagname]->remote->id] = $tagname;
 }
 
 // Standard apache2 upload limit is 2 MB
@@ -73,15 +74,13 @@ while(true) {
 
     $upload_str = "";
 
-    foreach ($feeds as $tagname=>$feed){
+    foreach ($feeds as $tagname=>$f) {
             
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
         
         if ($local->exists && $remote->exists) {
-            
-            $remote->npoints = $remote_meta[$remote->id]->npoints;
-            
+                        
             // local ahead of remote
             if ($local->npoints>$remote->npoints) {
                 $bytes_available = $max_upload_size - strlen($upload_str);
@@ -98,9 +97,27 @@ while(true) {
     }
 
     if (strlen($upload_str)==0) {
+
+        print date('m/d/Y h:i:s a', time())."\n";
+        print "- Nothing to upload\n";
+        
         die;
+        sleep(60);
+        
+        foreach ($feeds as $tagname=>$f) {
+            
+            if ($feeds[$tagname]->local->exists && $feeds[$tagname]->remote->exists) {
+                $latest_meta = $feed->get_meta($feeds[$tagname]->local->id);
+                // print "- ".$feeds[$tagname]->local->id." ".$feeds[$tagname]->local->npoints." ".$latest_meta->npoints."\n";
+                $feeds[$tagname]->local->npoints = $latest_meta->npoints;
+                $feeds[$tagname]->local->start_time = $latest_meta->start_time;
+                $feeds[$tagname]->local->interval = $latest_meta->interval;      
+            }
+        }
+        
+        continue;
     } else {
-        print "upload size: ".strlen($upload_str)."\n";
+        print "- Upload size: ".strlen($upload_str)."\n";
     }
 
     $checksum = crc32($upload_str);
@@ -118,9 +135,10 @@ while(true) {
     }
 
     foreach ($result->updated_feed_meta as $updated_feed) {
-        $remote_meta[$updated_feed->id]->start_time = $updated_feed->start_time;
-        $remote_meta[$updated_feed->id]->interval = $updated_feed->interval;
-        $remote_meta[$updated_feed->id]->npoints = $updated_feed->npoints;
+        $tagname = $remote_id_map[$updated_feed->id];
+        $feeds[$tagname]->remote->npoints = $updated_feed->npoints;
+        $feeds[$tagname]->remote->start_time = $updated_feed->start_time;
+        $feeds[$tagname]->remote->interval = $updated_feed->interval;
     }
     sleep(1);
 }
