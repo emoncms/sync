@@ -141,71 +141,118 @@ function phpfina_download($local_datadir,$local_id,$remote_server,$remote_id,$re
 function phpfina_upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apikey)
 {
     // Read local feed meta file
-    if (!$meta = get_meta($local_dir,$local_feed)) {
+    if (!$local = get_meta($local_dir,$local_feed)) {
         print "ERROR: Could not open local feed.meta file\n";
         return false;
     }
-    $start = $meta->start_time;
-    $interval = $meta->interval;
 
     // Download remote feed meta data
-    $remote_meta = json_decode(file_get_contents($remote_host."/feed/getmeta.json?apikey=$remote_apikey&id=".$remote_feedid));
+    $remote = json_decode(file_get_contents($remote_host."/feed/getmeta.json?apikey=$remote_apikey&id=".$remote_feedid));
     
-    if ($remote_meta==false || !isset($remote_meta->start_time) || !isset($remote_meta->interval) || !isset($remote_meta->npoints)) {
+    if ($remote==false || !isset($remote->start_time) || !isset($remote->interval) || !isset($remote->npoints)) {
         echo "ERROR: Invalid remote meta, returned false\n";
-        echo json_encode($remote_meta)."\n";
+        echo json_encode($remote)."\n";
         return false;
     }
-    
-    $start = $remote_meta->start_time + ($remote_meta->interval * $remote_meta->npoints);
 
-    // Calculate size of file to upload in number of datapoints
-    $start_pos = floor(($start - $meta->start_time)/$meta->interval);
-    if ($start_pos<0) { 
-        $start_pos = 0;
-        $start = $meta->start_time;
+    // Standard apache2 upload limit is 2 MB
+    // we limit upload size to a conservative 1 MB here
+    $max_upload_size = 1024*1024; // 1 MB
+
+    while(true) {
+
+        $upload_str = "";
+        
+        // local ahead of remote
+        if ($local->npoints>$remote->npoints) {
+            $bytes_available = $max_upload_size - strlen($upload_str);
+            $upload_str .= prepare_phpfina_segment($local_dir,$local,$remote,$bytes_available);
+        }
+
+        print "upload size: ".strlen($upload_str)."\n";
+        
+        if (strlen($upload_str)==0) {
+            // die("nothing to upload");
+            return true;
+        }
+
+        $checksum = crc32($upload_str);
+        $upload_str .= pack("I",$checksum);
+
+        $result_sync = request("$remote_host/feed/sync?apikey=$remote_apikey",$upload_str);
+
+        $result = json_decode($result_sync);
+        if ($result==null) {
+           // die("error parsing response from server: $result_sync");
+            return false;
+        }
+
+        if ($result->success==false) {
+           // die($result->message);
+            return false;
+        }
+        
+        $remote->start_time = $result->updated_feed_meta[0]->start_time;
+        $remote->interval = $result->updated_feed_meta[0]->interval;
+        $remote->npoints = $result->updated_feed_meta[0]->npoints;
+
+        sleep(1);
+    }
+}
+
+function prepare_phpfina_segment($datadir,$local,$remote,$bytes_available) {
+
+    // Segment data (binary)
+    $segment_binary = "";
+
+    // Allow upload if remote is blank or if meta match
+    if ($remote->npoints==0 || ($local->start_time==$remote->start_time && $local->interval==$remote->interval)) {
+
+        $npoints =  $local->npoints - $remote->npoints;
+        $data_start = $remote->npoints*4;
+
+        $header_length = 20;
+        $bytes_available = $bytes_available - $header_length;
+        
+        if ($bytes_available>0) {
+
+            $available_npoints = floor($bytes_available/4);
+            if ($available_npoints<$npoints) $npoints = $available_npoints;
+
+            if ($npoints>0) {
+                // Read binary data
+                $fh = fopen($datadir.$local->id.".dat", 'rb');
+                fseek($fh,$data_start);
+                $data_str = fread($fh,$npoints*4);
+                fclose($fh);
+                
+                // Verify data_str len must be multiple of 4
+                // cut off any extra bytes - this should not happen
+                if (strlen($data_str) % 4 != 0) {
+                    $data_str = substr($data_str,0,floor(strlen($data_str)/4)*4);
+                }
+
+                // Data length for this feed including 20 byte meta
+                $segment_binary .= pack("I",strlen($data_str)+$header_length);
+                // Meta part (16 bytes)
+                $segment_binary .= pack("I",$remote->id);
+                $segment_binary .= pack("I",$local->start_time);
+                $segment_binary .= pack("I",$local->interval);
+                $segment_binary .= pack("I",$data_start);
+                // Data part (variable length)
+                $segment_binary .= $data_str;
+            }
+        }
     }
     
-    $npoints = floor(filesize($local_dir.$local_feed.".dat")/4.0);
-    $npoints_to_upload = $npoints - $start_pos;
-    print "Upload size: ".(($npoints_to_upload*4)/1024)."kb\n";
-
-    // Calculate number of blocks
-    $blocksize = round((1024*512) / 4); // 100kb blocks
-    $blocknum = ceil($npoints_to_upload / $blocksize);
-    print "Number of blocks: $blocknum\n";
-
-    // Open local feed data file
-    $n=0;
-    $fh = fopen($local_dir.$local_feed.".dat", 'rb');
-    for ($block=0; $block<$blocknum; $block++) {
-        
-        // Seek to block start position and read block
-        $pos = floor(($start - $meta->start_time)/$meta->interval);
-        fseek($fh,$pos*4);
-        $data = fread($fh,$blocksize*4);
-        $actualblocksize = floor(strlen($data) / 4.0);
-        
-        // Send the data block
-        $result = request("$remote_host/feed/upload.json?id=$remote_feedid&start=$start&interval=$interval&npoints=$actualblocksize&apikey=$remote_apikey",$data);
-        
-        // Print result
-        $upload_size = round(($actualblocksize*4)/1024);
-        print "$n $upload_size"."kb upload: $result\n"; 
-        
-        // Exit if upload fails (Extend here to attempt retry??)
-        if ($result===false || $result==="false") break;
-        
-        // Advance next position
-        $start += $actualblocksize * $interval;
-        $n++;
-    }
-
+    return $segment_binary;
 }
 
 function get_meta($dir,$id)
 {
     $meta = new stdClass();
+    $meta->id = $id;
+    
     if (!$metafile = fopen($dir.$id.".meta", 'rb')) return false;
     fseek($metafile,8);
     $tmp = unpack("I",fread($metafile,4)); 
@@ -213,6 +260,10 @@ function get_meta($dir,$id)
     $tmp = unpack("I",fread($metafile,4)); 
     $meta->start_time = $tmp[1];
     fclose($metafile);
+    
+    clearstatcache($dir.$id.".dat");
+    $meta->npoints = floor(filesize($dir.$id.".dat")/4);
+    
     return $meta;
 }
 

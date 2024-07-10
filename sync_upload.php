@@ -73,87 +73,14 @@ while(true) {
             
             // local ahead of remote
             if ($local->npoints>$remote->npoints) {
-                
-                if ($local->engine==Engine::PHPFINA) {
-                
-                    // Allow upload if remote is blank or if meta match
-                    if ($remote->npoints==0 || ($local->start_time==$remote->start_time && $local->interval==$remote->interval)) {
+                $bytes_available = $max_upload_size - strlen($upload_str);
                     
-                        $npoints =  $local->npoints - $remote->npoints;
-                        $data_start = $remote->npoints*4;
-
-                        // limit by upload limit
-                        $bytes_available = $max_upload_size - strlen($upload_str) - 20;
-                        if ($bytes_available>0) {
-
-                            $available_npoints = floor($bytes_available/4);
-                            if ($available_npoints<$npoints) $npoints = $available_npoints;
-
-                            if ($npoints>0) {
-                                // Read binary data
-                                $fh = fopen($settings['feed']['phpfina']['datadir'].$local->id.".dat", 'rb');
-                                fseek($fh,$data_start);
-                                $data_str = fread($fh,$npoints*4);
-                                fclose($fh);
-                                
-                                // Verify data_str len must be multiple of 4
-                                // cut off any extra bytes - this should not happen
-                                if (strlen($data_str) % 4 != 0) {
-                                    $data_str = substr($data_str,0,floor(strlen($data_str)/4)*4);
-                                }
-
-                                // Data length for this feed including 20 byte meta
-                                $upload_str .= pack("I",strlen($data_str)+20);
-                                // Meta part (16 bytes)
-                                $upload_str .= pack("I",$remote->id);
-                                $upload_str .= pack("I",$local->start_time);
-                                $upload_str .= pack("I",$local->interval);
-                                $upload_str .= pack("I",$data_start);
-                                // Data part (variable length)
-                                $upload_str .= $data_str;
-                            }
-                        }
-                    }
+                if ($local->engine==Engine::PHPFINA) {
+                    $upload_str .= prepare_phpfina_segment($settings['feed']['phpfina']['datadir'],$local,$remote,$bytes_available);
                 }
                 
                 if ($local->engine==Engine::PHPTIMESERIES) {
-
-                    // Allow upload if remote is blank or if meta match
-                    if ($remote->npoints==0 || ($local->start_time==$remote->start_time)) {
-
-                        $npoints =  $local->npoints - $remote->npoints;
-                        $data_start = $remote->npoints*9;
-
-                        // limit by upload limit
-                        $bytes_available = $max_upload_size - strlen($upload_str) - 12;
-                        if ($bytes_available>0) {
-
-                            $available_npoints = floor($bytes_available/9);
-                            if ($available_npoints<$npoints) $npoints = $available_npoints;
-
-                            if ($npoints>0) {
-                                // Read binary data
-                                $fh = fopen($settings['feed']['phptimeseries']['datadir']."feed_".$local->id.".MYD", 'rb');
-                                fseek($fh,$data_start);
-                                $data_str = fread($fh,$npoints*9);
-                                fclose($fh);
-                                
-                                // Verify data_str len must be multiple of 4
-                                // cut off any extra bytes - this should not happen
-                                if (strlen($data_str) % 9 != 0) {
-                                    $data_str = substr($data_str,0,floor(strlen($data_str)/9)*9);
-                                }
-
-                                // Data length for this feed including 12 byte meta
-                                $upload_str .= pack("I",strlen($data_str)+12);
-                                // Meta part (16 bytes)
-                                $upload_str .= pack("I",$remote->id);
-                                $upload_str .= pack("I",$data_start);
-                                // Data part (variable length)
-                                $upload_str .= $data_str;
-                            }
-                        }
-                    }
+                    $upload_str .= prepare_phptimeseries_segment($settings['feed']['phptimeseries']['datadir'],$local,$remote,$bytes_available);                  
                 }
             }
         }
@@ -186,5 +113,3 @@ while(true) {
     }
     sleep(1);
 }
-
-

@@ -68,7 +68,7 @@ while(true){
         // ----------------------------------------------------------------------------
         
         if ($params->action=="upload") {
-
+            
             if ($params->engine==Engine::PHPFINA) {
                 phpfina_upload(
                     $settings['feed']['phpfina']['datadir'],
@@ -89,6 +89,7 @@ while(true){
                 );
             }
         }
+        
         
 
     } else {

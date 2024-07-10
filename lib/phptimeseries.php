@@ -52,3 +52,49 @@ function phptimeseries_upload($local_dir,$local_feed,$remote_host,$remote_feedid
 
 }
 
+function prepare_phptimeseries_segment($datadir,$local,$remote,$bytes_available) {
+
+    // Segment data (binary)
+    $segment_binary = "";
+
+    // Allow upload if remote is blank or if meta match
+    if ($remote->npoints==0 || ($local->start_time==$remote->start_time)) {
+
+        $npoints =  $local->npoints - $remote->npoints;
+        $data_start = $remote->npoints*9;
+
+        $header_length = 12;
+        $bytes_available = $bytes_available - $header_length;
+
+        if ($bytes_available>0) {
+
+            $available_npoints = floor($bytes_available/9);
+            if ($available_npoints<$npoints) $npoints = $available_npoints;
+
+            if ($npoints>0) {
+                // Read binary data
+                $fh = fopen($datadir."feed_".$local->id.".MYD", 'rb');
+                fseek($fh,$data_start);
+                $data_str = fread($fh,$npoints*9);
+                fclose($fh);
+                
+                // Verify data_str len must be multiple of 9
+                // cut off any extra bytes - this should not happen
+                if (strlen($data_str) % 9 != 0) {
+                    $data_str = substr($data_str,0,floor(strlen($data_str)/9)*9);
+                }
+
+                // Data length for this feed including 12 byte meta
+                $segment_binary .= pack("I",strlen($data_str)+$header_length);
+                // Meta part (16 bytes)
+                $segment_binary .= pack("I",$remote->id);
+                $segment_binary .= pack("I",$data_start);
+                // Data part (variable length)
+                $segment_binary .= $data_str;
+            }
+        }
+    }
+    
+    return $segment_binary;
+}
+
