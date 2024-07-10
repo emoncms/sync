@@ -101,7 +101,11 @@ while(true) {
         print date('m/d/Y h:i:s a', time())."\n";
         print "- Nothing to upload\n";
         
+        // ------------------------------------
+        // Remove this for continuous operation
         die;
+        // ------------------------------------
+        
         sleep(60);
         
         foreach ($feeds as $tagname=>$f) {
