@@ -26,6 +26,37 @@ $apikey_write = $r->apikey_write;
 
 $feeds = $sync->get_feed_list($userid);
 
+// Create remote feeds if they do not exist
+
+if (isset($argv[1]) && $argv[1]=="all") {
+    print "Sync all\n";
+    foreach ($feeds as $tagname=>$feed){
+        $local = $feeds[$tagname]->local;
+        $remote = $feeds[$tagname]->remote;
+
+        if ($local->exists && !$remote->exists) {
+            if ($local->engine==Engine::PHPFINA || $local->engine==Engine::PHPTIMESERIES) {
+                print "creating feed\n";
+                print json_encode($local)."\n";
+
+                $url = $host."/feed/create.json?";
+                $url .= "apikey=".$apikey_write;
+                $url .= "&name=".urlencode($local->name);
+                $url .= "&tag=".urlencode($local->tag);
+                $url .= "&engine=".$local->engine;
+                $url .= "&options=".json_encode(array("interval"=>$local->interval));
+
+                $result = json_decode(file_get_contents($url));
+                if ($result->success) {
+                    $remote->exists = true;
+                    $remote->id = $result->feedid;
+                    $remote->npoints = 0;
+                }
+            }
+        } 
+    }
+}
+
 // Copy remote meta to array by id
 $remote_meta = array();
 foreach ($feeds as $tagname=>$feed){
