@@ -47,17 +47,18 @@
         <table class="table" v-if="view=='feeds'">
             <tr>
                 <th>Location</th>
-                <th>Feed Tag</th>
                 <th>Feed Name</th>
                 <th>Start time</th>
                 <th>Interval</th>
-                <th></th>
-                <th></th>
+                <th>Status</th>
+                <th>Action</th>
             </tr>
-            <tbody id="all_feed_datas">
-                <tr v-for="(feed,tagname) in feeds" v-bind:class="feed.class">
+            <template v-for="(feeds, tag) in feeds_by_tag">
+                <tr style="background-color: #eee">
+                    <td colspan="6"><h4>{{ tag }}</h4></td>
+                </tr>
+                <tr v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
                     <td>{{ feed.location }}</td>
-                    <td>{{ feed.local.tag }}</td>
                     <td>{{ feed.local.name }}</td>
                     <td>{{ feed.local.start_time | toDate }}</td>
                     <td>{{ feed.local.interval | interval_format }}s</td>
@@ -67,9 +68,12 @@
                         <button class="btn btn-small" @click="upload_feed(tagname)" v-if="feed.button=='Upload'"><i class='icon-arrow-right'></i> Upload</button>
                     </td>
                 </tr>
+                <!-- spacing -->
+                <tr><td colspan="6"></td></tr>
 
-            </tbody>
+            </template>
         </table>
+
 
         <div v-if="view=='inputs'">
             <p>Download remote emoncms inputs <button id="download-inputs" class="btn">Download</button></p>
@@ -95,8 +99,6 @@
     var redis_enabled = <?php echo $settings["redis"]["enabled"]; ?>;
     var path = "<?php echo $path; ?>";
 
-    var feeds = [];
-
     var feeds_to_upload = [];
     var feeds_to_download = [];
     var feed_list_refresh_interval = false;
@@ -106,6 +108,7 @@
         data: {
             view: 'feeds',
             feeds: {},
+            feeds_by_tag: {},
             next_update_seconds: 0,
             alert: "Connecting to remote emoncms server..."
         },
@@ -272,6 +275,18 @@
                 }
 
                 app.feeds = process_feed_list(result);
+
+                // Arrange feeds by tag
+                var feeds_by_tag = {};
+                for (var tagname in app.feeds) {
+                    var tag = app.feeds[tagname].local.tag;
+                    if (feeds_by_tag[tag] == undefined) feeds_by_tag[tag] = {};
+                    feeds_by_tag[tag][tagname] = app.feeds[tagname];
+                }
+
+                app.feeds_by_tag = feeds_by_tag;
+
+
                 app.alert = false;
             }
         });
