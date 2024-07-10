@@ -186,16 +186,19 @@ function prepare_phpfina_segment($datadir,$local,$remote,$bytes_available) {
     return $segment_binary;
 }
 
-function request($url,$data)
+function request($url, $data)
 {
     $curl = curl_init($url);
+
+    if ($curl === false) {
+        return array("success"=>false, "message"=>"failed to init curl");
+    }
 
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
     curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-
-    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT,5);
-    curl_setopt($curl, CURLOPT_TIMEOUT,10);
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 10);
 
     $headers = [
         'Content-Type: application/octet-stream'
@@ -204,7 +207,26 @@ function request($url,$data)
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
     $curl_response = curl_exec($curl);
+
+    if ($curl_response === false) {
+        $error_code = curl_errno($curl);
+        $error_msg = curl_error($curl);
+        curl_close($curl);
+
+        if ($error_code == CURLE_OPERATION_TIMEOUTED) {
+            return array("success"=>false, "message"=>"timeout error");
+        } else {
+            return array("success"=>false, "message"=>$error_msg);       
+        }
+    }
+
+    $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     curl_close($curl);
 
-    return $curl_response;
+    if ($http_code >= 400) {
+        return array("success"=>false, "message"=>"HTTP error: $http_code");       
+    }
+
+    return array("success"=>true, "result"=>$curl_response);
 }
+

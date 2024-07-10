@@ -30,8 +30,9 @@ $apikey_write = $r->apikey_write;
 
 $feeds = $sync->get_feed_list($userid);
 
-// Create remote feeds if they do not exist
-
+// ------------------------------------------------
+// Option to upload all and create remote feeds if they do not exist
+// ------------------------------------------------
 if (isset($argv[1]) && $argv[1]=="all") {
     print "Sync all\n";
     foreach ($feeds as $tagname=>$f){
@@ -59,6 +60,14 @@ if (isset($argv[1]) && $argv[1]=="all") {
             }
         } 
     }
+}
+
+// ------------------------------------------------
+// Option to enable background continuous operation
+// ------------------------------------------------
+$background_service = false;
+if (isset($argv[2]) && $argv[2]=="bg") {
+    $background_service = true;
 }
 
 $remote_id_map = array();
@@ -103,13 +112,7 @@ while(true) {
         print date('m/d/Y h:i:s a', time())."\n";
         print "- Nothing to upload\n";
         
-        // ------------------------------------------------
-        // Option to enable background continuous operation
-        if (!isset($argv[2]) || $argv[2]!="bg") {
-            die;
-        }
-        // ------------------------------------------------
-        
+        if (!$background_service) die;
         sleep(60);
         
         foreach ($feeds as $tagname=>$f) {
@@ -132,14 +135,26 @@ while(true) {
     $upload_str .= pack("I",$checksum);
 
     $result_sync = request("$host/feed/sync?apikey=$apikey_write",$upload_str);
-
-    $result = json_decode($result_sync);
+    if (!$result_sync["success"]) {
+        print $result_sync["message"]."\n";
+        if (!$background_service) die();
+        sleep(60);
+        continue;
+    }
+    
+    $result = json_decode($result_sync["result"]);
     if ($result==null) {
-       die("error parsing response from server: $result_sync");
+        print "error parsing response from server: ".$result_sync["result"]."\n";
+        if (!$background_service) die();
+        sleep(60);
+        continue;    
     }
 
     if ($result->success==false) {
-       die($result->message);
+        print $result->message."\n";
+        if (!$background_service) die();
+        sleep(60);
+        continue;    
     }
 
     foreach ($result->updated_feed_meta as $updated_feed) {

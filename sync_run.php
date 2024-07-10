@@ -133,10 +133,13 @@ while(true) {
     $upload_str .= pack("I",$checksum);
 
     $result_sync = request($params->remote_server."/feed/sync?apikey=".$params->remote_apikey,$upload_str);
+    if (!$result_sync["success"]) {
+        die($result_sync["message"]);
+    }
 
-    $result = json_decode($result_sync);
+    $result = json_decode($result_sync["result"]);
     if ($result==null) {
-       die("error parsing response from server: $result_sync");
+       die("error parsing response from server: ".$result_sync["result"]);
     }
 
     if ($result->success==false) {
