@@ -47,53 +47,6 @@ function phptimeseries_download($local_datadir,$local_id,$remote_server,$remote_
     echo "--downloaded: ".$dnsize." bytes\n";
 }
 
-function phptimeseries_upload($local_dir,$local,$remote,$remote_host,$remote_apikey)
-{
-    // Standard apache2 upload limit is 2 MB
-    // we limit upload size to a conservative 1 MB here
-    $max_upload_size = 1024*1024; // 1 MB
-
-    while(true) {
-
-        $upload_str = "";
-        
-        // local ahead of remote
-        if ($local->npoints>$remote->npoints) {
-            $bytes_available = $max_upload_size - strlen($upload_str);
-            $upload_str .= prepare_phptimeseries_segment($local_dir,$local,$remote,$bytes_available);
-        }
-
-        print "upload size: ".strlen($upload_str)."\n";
-        
-        if (strlen($upload_str)==0) {
-            // die("nothing to upload");
-            return true;
-        }
-
-        $checksum = crc32($upload_str);
-        $upload_str .= pack("I",$checksum);
-
-        $result_sync = request("$remote_host/feed/sync?apikey=$remote_apikey",$upload_str);
-
-        $result = json_decode($result_sync);
-        if ($result==null) {
-           // die("error parsing response from server: $result_sync");
-            return false;
-        }
-
-        if ($result->success==false) {
-           // die($result->message);
-            return false;
-        }
-        
-        $remote->start_time = $result->updated_feed_meta[0]->start_time;
-        $remote->interval = $result->updated_feed_meta[0]->interval;
-        $remote->npoints = $result->updated_feed_meta[0]->npoints;
-
-        sleep(1);
-    }
-}
-
 function prepare_phptimeseries_segment($datadir,$local,$remote,$bytes_available) {
 
     // Segment data (binary)
