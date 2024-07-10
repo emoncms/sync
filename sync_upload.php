@@ -103,10 +103,12 @@ while(true) {
         print date('m/d/Y h:i:s a', time())."\n";
         print "- Nothing to upload\n";
         
-        // ------------------------------------
-        // Remove this for continuous operation
-        die;
-        // ------------------------------------
+        // ------------------------------------------------
+        // Option to enable background continuous operation
+        if (!isset($argv[2]) || $argv[2]!="bg") {
+            die;
+        }
+        // ------------------------------------------------
         
         sleep(60);
         
