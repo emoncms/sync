@@ -15,7 +15,7 @@
   <p>The module can be used to download or upload data to or from a remote emoncms installation.</p>
   <p>Start by entering the remote emoncms installation location in the <i>host</i> field (e.g https://emoncms.org). Then enter the <i>username</i> and <i>password</i> of the account you wish to link to.</p>
   <p>Download or upload specific feeds as required.</p>
-  <p><b>Note:</b> Data upload is not yet enabled on emoncms.org.</p>
+
   <br>
   <?php if ($settings["redis"]["enabled"]) { ?>
 
@@ -118,33 +118,37 @@ function jsonfeedsTohtml(feeds)
         feeds_to_upload.push(tagname)
       }
         
-      if (feeds[tagname].local.start_time==feeds[tagname].remote.start_time && feeds[tagname].local.interval==feeds[tagname].remote.interval) {
+      if (feeds[tagname].local.exists && feeds[tagname].remote.exists) {
         feedlocation = "Both";
             
         start_time = feeds[tagname].local.start_time;
         interval = feeds[tagname].local.interval;
-      }
+
         
-      if (feeds[tagname].local.start_time==feeds[tagname].remote.start_time && feeds[tagname].local.interval==feeds[tagname].remote.interval) {
-        if (feeds[tagname].local.npoints>feeds[tagname].remote.npoints) {
-          tr = "<tr class='info'>";
-                
-          status = "Local ahead of Remote by "+(feeds[tagname].local.npoints-feeds[tagname].remote.npoints)+" points";
-          action = "<button class='btn btn-small upload' tagname='"+tagname+"'><i class='icon-arrow-right' ></i> Upload</button>";
-          feeds_to_upload.push(tagname)
+        if (feeds[tagname].local.start_time==feeds[tagname].remote.start_time) {
           
-        } else if (feeds[tagname].local.npoints<feeds[tagname].remote.npoints) {
-          tr = "<tr class='warning'>";
-                
-          status = "Local behind Remote by "+(feeds[tagname].remote.npoints-feeds[tagname].local.npoints)+" points";
-          action = "<button class='btn btn-small download' tagname='"+tagname+"'><i class='icon-arrow-left' ></i> Download</button>";
-          feeds_to_download.push(tagname)
-               
-        } else {
-          tr = "<tr class='success'>";
-                
-          status = "Local and Remote are the same";
-          action = "";
+          if (feeds[tagname].local.engine==5 && feeds[tagname].local.interval!=feeds[tagname].remote.interval) continue;
+        
+          if (feeds[tagname].local.npoints>feeds[tagname].remote.npoints) {
+            tr = "<tr class='info'>";
+                  
+            status = "Local ahead of Remote by "+(feeds[tagname].local.npoints-feeds[tagname].remote.npoints)+" points";
+            action = "<button class='btn btn-small upload' tagname='"+tagname+"'><i class='icon-arrow-right' ></i> Upload</button>";
+            feeds_to_upload.push(tagname)
+            
+          } else if (feeds[tagname].local.npoints<feeds[tagname].remote.npoints) {
+            tr = "<tr class='warning'>";
+                  
+            status = "Local behind Remote by "+(feeds[tagname].remote.npoints-feeds[tagname].local.npoints)+" points";
+            action = "<button class='btn btn-small download' tagname='"+tagname+"'><i class='icon-arrow-left' ></i> Download</button>";
+            feeds_to_download.push(tagname)
+                 
+          } else {
+            tr = "<tr class='success'>";
+                  
+            status = "Local and Remote are the same";
+            action = "";
+          }
         }
       }
         
@@ -162,7 +166,7 @@ function jsonfeedsTohtml(feeds)
       }
         
       if (interval!=undefined) {
-        out.push("<td>"+interval+"s</td>");
+        out.push("<td>"+interval.toFixed(1)+"s</td>");
       } else {
         out.push("<td>n/a</td>");
       } 
