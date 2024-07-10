@@ -47,29 +47,9 @@ while(true) {
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
         
-        if (!isset($remote->id)) {
-            // This skips all feeds that do not exist on the remote server
-            // Remote server feeds should be created when doing the sync
-            // module selective manual upload
-            continue;
-        }
-        
-        // We dont strictly need to map these here as these are linked objects..
-        $remote->start_time = $remote_meta[$remote->id]->start_time;
-        $remote->interval = $remote_meta[$remote->id]->interval;
-        $remote->npoints = $remote_meta[$remote->id]->npoints;
-        
-        if (!$local->exists && $remote->exists) {
-            // echo "remote only";
-            // Create local feeds
-        }
-        
-        else if ($local->exists && !$remote->exists) {
-            // echo "local only"; 
-            // Create remote feeds
-        }
-        
-        else if ($local->exists && $remote->exists) {
+        if ($local->exists && $remote->exists) {
+            
+            $remote->npoints = $remote_meta[$remote->id]->npoints;
             
             // local ahead of remote
             if ($local->npoints>$remote->npoints) {
@@ -86,10 +66,10 @@ while(true) {
         }
     }
 
-    print "upload size: ".strlen($upload_str)."\n";
-    
     if (strlen($upload_str)==0) {
-        die("nothing to upload");
+        die;
+    } else {
+        print "upload size: ".strlen($upload_str)."\n";
     }
 
     $checksum = crc32($upload_str);

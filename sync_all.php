@@ -1,9 +1,8 @@
 <?php
 // Get script location
 list($scriptPath) = get_included_files();
-$scriptPath = str_replace("/sync_upload.php","",$scriptPath);
-// print $scriptPath;
-// chdir($scriptPath);
+$scriptPath = str_replace("/sync_all.php","",$scriptPath);
+chdir($scriptPath);
 require "lib/phpfina.php";
 require "lib/phptimeseries.php";
 
@@ -27,58 +26,94 @@ $apikey_write = $r->apikey_write;
 
 $feeds = $sync->get_feed_list($userid);
 
+// Copy remote meta to array by id
+$remote_meta = array();
 foreach ($feeds as $tagname=>$feed){
-        
-    $local = $feeds[$tagname]->local;
     $remote = $feeds[$tagname]->remote;
-    
-    if (!$local->exists && $remote->exists) {
-        // echo "remote only";
-        // Create local feeds
-    }
-    
-    else if ($local->exists && !$remote->exists) {
-        // echo "local only"; 
-        // Create remote feeds
-        if ($local->engine==Engine::PHPFINA) {
-            print "creating feed\n";
-            print json_encode($local)."\n";
+    if (!isset($remote->id)) continue;
+    $remote_meta[$remote->id] = $remote;
+}
 
-            $url = $host."/feed/create.json?";
-            $url .= "apikey=".$apikey_write;
-            $url .= "&name=".urlencode($local->name);
-            $url .= "&tag=".urlencode($local->tag);
-            $url .= "&engine=5";
-            $url .= "&options=".json_encode(array("interval"=>$local->interval));
+// Standard apache2 upload limit is 2 MB
+// we limit upload size to a conservative 1 MB here
+$max_upload_size = 1024*1024; // 1 MB
 
-            $result = json_decode(file_get_contents($url));
-            if ($result->success) {
-                $remote_id = $result->feedid;
-                phpfina_upload($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote_id,$apikey_write);
+while(true) {
+
+    $upload_str = "";
+
+    foreach ($feeds as $tagname=>$feed){
+            
+        $local = $feeds[$tagname]->local;
+        $remote = $feeds[$tagname]->remote;
+        
+        if ($local->exists && !$remote->exists) {
+            // echo "local only"; 
+            // Create remote feeds
+            if ($local->engine==Engine::PHPFINA || $local->engine==Engine::PHPTIMESERIES) {
+                print "creating feed\n";
+                print json_encode($local)."\n";
+
+                $url = $host."/feed/create.json?";
+                $url .= "apikey=".$apikey_write;
+                $url .= "&name=".urlencode($local->name);
+                $url .= "&tag=".urlencode($local->tag);
+                $url .= "&engine=".$local->engine;
+                $url .= "&options=".json_encode(array("interval"=>$local->interval));
+
+                $result = json_decode(file_get_contents($url));
+                if ($result->success) {
+                    $remote->exists = true;
+                    $remote->id = $result->feedid;
+                    $remote->npoints = 0;
+                    $remote_meta[$remote->id] = $remote;
+                }
+            }
+        }
+        
+        if ($local->exists && $remote->exists) {
+            
+            $remote->npoints = $remote_meta[$remote->id]->npoints;
+            
+            // local ahead of remote
+            if ($local->npoints>$remote->npoints) {
+                $bytes_available = $max_upload_size - strlen($upload_str);
+                    
+                if ($local->engine==Engine::PHPFINA) {
+                    $upload_str .= prepare_phpfina_segment($settings['feed']['phpfina']['datadir'],$local,$remote,$bytes_available);
+                }
+                
+                if ($local->engine==Engine::PHPTIMESERIES) {
+                    $upload_str .= prepare_phptimeseries_segment($settings['feed']['phptimeseries']['datadir'],$local,$remote,$bytes_available);                  
+                }
             }
         }
     }
-    
-    else if ($local->start_time==$remote->start_time && $local->interval==$remote->interval) {
-        // echo "both";
-        
-        if ($local->npoints>$remote->npoints) {
-            // local ahead of remote
-            echo $tagname."\n";
-            if ($local->engine==Engine::PHPFINA) {
-                phpfina_upload($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote->id,$apikey_write);        
-            }
-        } /*else if ($local->npoints<$remote->npoints) {
-            echo "local behind remote";
-            
-            if ($local->engine==Engine::PHPFINA) {
-                $lastvalue = phpfina_download($settings['feed']['phpfina']['datadir'],$local->id,$host,$remote->id,$apikey_read);
-                if ($lastvalue) $redis->hMset("feed:".$local->id, $lastvalue);
-            }
-            
-            
-        } else {
-            echo " local and remote the same";
-        }*/
+
+    if (strlen($upload_str)==0) {
+        die;
+    } else {
+        print "upload size: ".strlen($upload_str)."\n";
     }
+
+    $checksum = crc32($upload_str);
+    $upload_str .= pack("I",$checksum);
+
+    $result_sync = request("$host/feed/sync?apikey=$apikey_write",$upload_str);
+
+    $result = json_decode($result_sync);
+    if ($result==null) {
+       die("error parsing response from server: $result_sync");
+    }
+
+    if ($result->success==false) {
+       die($result->message);
+    }
+
+    foreach ($result->updated_feed_meta as $updated_feed) {
+        $remote_meta[$updated_feed->id]->start_time = $updated_feed->start_time;
+        $remote_meta[$updated_feed->id]->interval = $updated_feed->interval;
+        $remote_meta[$updated_feed->id]->npoints = $updated_feed->npoints;
+    }
+    sleep(1);
 }
