@@ -138,23 +138,8 @@ function phpfina_download($local_datadir,$local_id,$remote_server,$remote_id,$re
     return $lastvalue;
 }
 
-function phpfina_upload($local_dir,$local_feed,$remote_host,$remote_feedid,$remote_apikey)
+function phpfina_upload($local_dir,$local,$remote,$remote_host,$remote_apikey)
 {
-    // Read local feed meta file
-    if (!$local = get_meta($local_dir,$local_feed)) {
-        print "ERROR: Could not open local feed.meta file\n";
-        return false;
-    }
-
-    // Download remote feed meta data
-    $remote = json_decode(file_get_contents($remote_host."/feed/getmeta.json?apikey=$remote_apikey&id=".$remote_feedid));
-    
-    if ($remote==false || !isset($remote->start_time) || !isset($remote->interval) || !isset($remote->npoints)) {
-        echo "ERROR: Invalid remote meta, returned false\n";
-        echo json_encode($remote)."\n";
-        return false;
-    }
-
     // Standard apache2 upload limit is 2 MB
     // we limit upload size to a conservative 1 MB here
     $max_upload_size = 1024*1024; // 1 MB
@@ -246,25 +231,6 @@ function prepare_phpfina_segment($datadir,$local,$remote,$bytes_available) {
     }
     
     return $segment_binary;
-}
-
-function get_meta($dir,$id)
-{
-    $meta = new stdClass();
-    $meta->id = $id;
-    
-    if (!$metafile = fopen($dir.$id.".meta", 'rb')) return false;
-    fseek($metafile,8);
-    $tmp = unpack("I",fread($metafile,4)); 
-    $meta->interval = $tmp[1];
-    $tmp = unpack("I",fread($metafile,4)); 
-    $meta->start_time = $tmp[1];
-    fclose($metafile);
-    
-    clearstatcache($dir.$id.".dat");
-    $meta->npoints = floor(filesize($dir.$id.".dat")/4);
-    
-    return $meta;
 }
 
 function request($url,$data)
