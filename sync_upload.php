@@ -29,6 +29,10 @@ $apikey_read = $r->apikey_read;
 $apikey_write = $r->apikey_write;
 
 $feeds = $sync->get_feed_list($userid);
+if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
+    print "Error: could not load feeds\n";
+    die;
+}
 
 // ------------------------------------------------
 // Option to upload all and create remote feeds if they do not exist
@@ -136,7 +140,7 @@ while(true) {
 
     $result_sync = request("$host/feed/sync?apikey=$apikey_write",$upload_str);
     if (!$result_sync["success"]) {
-        print $result_sync["message"]."\n";
+        print "- ".$result_sync["message"]."\n";
         if (!$background_service) die();
         sleep(60);
         continue;
@@ -144,14 +148,14 @@ while(true) {
     
     $result = json_decode($result_sync["result"]);
     if ($result==null) {
-        print "error parsing response from server: ".$result_sync["result"]."\n";
+        print "- error parsing response from server: ".$result_sync["result"]."\n";
         if (!$background_service) die();
         sleep(60);
         continue;    
     }
 
     if ($result->success==false) {
-        print $result->message."\n";
+        print "- ".$result->message."\n";
         if (!$background_service) die();
         sleep(60);
         continue;    

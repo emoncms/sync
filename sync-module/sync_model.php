@@ -53,8 +53,9 @@ class Sync
         // Authentication request to target server
         $password = urlencode($password);
         $result = $this->request("POST",$host."/user/auth.json","username=$username&password=$password");
-        $this->log->warn($result);
-        $result = json_decode($result);
+        if (!$result['success']) return array("success"=>false, "message"=>"No response from remote server");
+
+        $result = json_decode($result['result']);
         
         
         
@@ -91,10 +92,12 @@ class Sync
         }
         // 3. Load remote feeds
         
-        $result_str = $this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read,false);
-        $remotefeeds = json_decode($result_str);
+        $result = $this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read,false);
+        if (!$result['success']) return array("success"=>false, "message"=>"No response from remote server");
+
+        $remotefeeds = json_decode($result['result']);
         if ($remotefeeds === null) {
-            return array("success"=>false, "message"=>"No response from remote server: $result_str");
+            return array("success"=>false, "message"=>"No response from remote server: ".$result['result']);
         }
         
         $feeds = array();
@@ -166,6 +169,11 @@ class Sync
     private function request($method,$url,$body)
     {   
         $curl = curl_init($url);
+
+        if ($curl === false) {
+            return array("success"=>false, "message"=>"failed to init curl");
+        }
+
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         //curl_setopt($curl, CURLOPT_HEADER, true);
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
@@ -175,7 +183,26 @@ class Sync
         curl_setopt($curl, CURLOPT_TIMEOUT,$this->total_timeout);
         
         $curl_response = curl_exec($curl);
+
+        if ($curl_response === false) {
+            $error_code = curl_errno($curl);
+            $error_msg = curl_error($curl);
+            curl_close($curl);
+    
+            if ($error_code == CURLE_OPERATION_TIMEOUTED) {
+                return array("success"=>false, "message"=>"timeout error");
+            } else {
+                return array("success"=>false, "message"=>$error_msg);       
+            }
+        }
+
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-        return $curl_response;
+    
+        if ($http_code >= 400) {
+            return array("success"=>false, "message"=>"HTTP error: $http_code");       
+        }
+    
+        return array("success"=>true, "result"=>$curl_response);
     }
 }
