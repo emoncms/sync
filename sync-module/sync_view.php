@@ -48,8 +48,6 @@
             <tr>
                 <th>Location</th>
                 <th>Feed Name</th>
-                <th>Start time</th>
-                <th>Interval</th>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
@@ -59,9 +57,8 @@
                 </tr>
                 <tr v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
                     <td>{{ feed.location }}</td>
-                    <td>{{ feed.local.name }}</td>
-                    <td>{{ feed.local.start_time | toDate }}</td>
-                    <td>{{ feed.local.interval | interval_format }}s</td>
+                    <td :title="`Start time: ${toDate(feed.local.start_time)}\nInterval: ${interval_format(feed.local.interval)}s`">{{ feed.local.name }}</td>  
+
                     <td>{{ feed.status }}</td>
                     <td>
                         <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
@@ -167,10 +164,7 @@
                         }
                     }
                 });
-            }
-
-        },
-        filters: {
+            },
             toDate: function(value) {
                 if (!value) return '';
                 var a = new Date(value * 1000);
@@ -262,7 +256,7 @@
     //update the global variable feeds
     function syncList() {
         app.next_update_seconds = 10;
-        app.alert = "Connected. Fetching emoncms feeds...";
+        // app.alert = "Connected. Fetching emoncms feeds...";
 
         $.ajax({
             url: path + "sync/feed-list",
