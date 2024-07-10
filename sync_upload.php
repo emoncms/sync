@@ -63,7 +63,9 @@ if (isset($argv[1]) && $argv[1]=="all") {
 
 $remote_id_map = array();
 foreach ($feeds as $tagname=>$f) {
-    $remote_id_map[$feeds[$tagname]->remote->id] = $tagname;
+    if ($feeds[$tagname]->remote->exists) {
+        $remote_id_map[$feeds[$tagname]->remote->id] = $tagname;
+    }
 }
 
 // Standard apache2 upload limit is 2 MB
