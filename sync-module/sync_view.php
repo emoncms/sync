@@ -15,7 +15,7 @@
             <span class="add-on">Host</span><input v-model="remote_host" type="text">
             <span v-if="show_login">
                 <span class="add-on">Username</span><input v-model="remote_username" type="text" style="width:150px">
-                <span class="add-on">Password</span><input v-model="remote_password" type="password" style="width:150px">
+                <span class="add-on">Password</span><input v-model="remote_password" type="text" style="width:150px">
                 <button @click="remote_save" class="btn">Connect</button>
             </span>
             <span v-else>
@@ -24,10 +24,10 @@
             </span>
         </div>
 
-        <div style="float:right; padding-top:10px; padding-right:20px">Next update: {{ next_update_seconds }}s</div>
+        <div style="float:right; padding-top:10px; padding-right:20px" v-if="view=='feeds'">Next update: {{ next_update_seconds }}s</div>
 
         <br>
-        <div class="input-prepend input-append">
+        <div class="input-prepend input-append" v-if="view=='feeds'">
             <button class="btn" @click="download_all">Download All</button>
             <button class="btn" @click="upload_all">Upload All</button>
         </div>
@@ -238,7 +238,7 @@
                     dataType: 'text',
                     async: true,
                     success(result) {
-                        dashboard_log = result;
+                        app.dashboard_log = result;
                     }
                 });
             },
@@ -252,7 +252,7 @@
                     dataType: 'text',
                     async: true,
                     success(result) {
-                        input_log = result;
+                        app.input_log = result;
                     }
                 });
             }
