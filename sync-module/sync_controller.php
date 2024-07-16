@@ -29,9 +29,11 @@ function sync_controller()
     
     // 1. User enters username, password and host of remote installation
     //    local emoncms fetches the remote read and write apikey and stores locally
-    if ($route->action == "remove-save") {
+    if ($route->action == "remote-save") {
         $route->format = "json";
-        $_password = urldecode(post("password"));
+        $password = post("password");
+        if ($password=="") return array("success"=>false,"message"=>"Password cannot be empty");
+        $_password = urldecode($password);
         return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
     }
     

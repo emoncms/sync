@@ -1,15 +1,5 @@
 <?php global $path, $settings, $route; ?>
 <script src="<?php echo $path; ?>Lib/vue.min.js"></script>
-<style>
-    .syncprogress {
-        background-color: #7bc3e2;
-        border: 1px solid #29abe2;
-        color: #fff;
-        font-size: 10px;
-        padding: 2px;
-    }
-</style>
-
 
 <h2>Emoncms Sync: <span id="page"></span></h2>
 
@@ -22,19 +12,19 @@
 
     <div id="app">
         <div class="input-prepend input-append">
-            <span class="add-on">Host</span><input id="remote-host" type="text" value="https://emoncms.org">
-            <span id="login_auth">
-                <span class="add-on">Username</span><input id="remote-username" type="text" style="width:150px">
-                <span class="add-on">Password</span><input id="remote-password" type="password" style="width:150px">
-                <button id="remote-save" class="btn">Connect</button>
+            <span class="add-on">Host</span><input v-model="remote_host" type="text">
+            <span v-if="show_login">
+                <span class="add-on">Username</span><input v-model="remote_username" type="text" style="width:150px">
+                <span class="add-on">Password</span><input v-model="remote_password" type="password" style="width:150px">
+                <button @click="remote_save" class="btn">Connect</button>
             </span>
-            <span id="apikey_div" style="display:none">
-                <span class="add-on">Apikey</span><input id="remote-apikey" type="text" style="width:250px" disabled>
-                <button id="remote-change" class="btn">Change</button>
+            <span v-else>
+                <span class="add-on">Apikey</span><input v-model="remote_apikey" type="text" style="width:250px" disabled>
+                <button @click="remote_change" class="btn">Change</button>
             </span>
         </div>
 
-        <div id="time" style="float:right; padding-top:10px; padding-right:20px">Next update: {{ next_update_seconds }}s</div>
+        <div style="float:right; padding-top:10px; padding-right:20px">Next update: {{ next_update_seconds }}s</div>
 
         <br>
         <div class="input-prepend input-append">
@@ -53,7 +43,7 @@
             </tr>
             <template v-for="(feeds, tag) in feeds_by_tag">
                 <tr style="background-color: #eee">
-                    <td colspan="6"><h4>{{ tag }}</h4></td>
+                    <td colspan="6"><b>{{ tag }}</b></td>
                 </tr>
                 <tr v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
                     <td>{{ feed.location }}</td>
@@ -73,13 +63,13 @@
 
 
         <div v-if="view=='inputs'">
-            <p>Download remote emoncms inputs <button id="download-inputs" class="btn">Download</button></p>
-            <pre id="input-output"></pre>
+            <p>Download remote emoncms inputs <button @click="download_inputs" class="btn">Download</button></p>
+            <pre v-if="input_log">{{ input_log }}</pre>
         </div>
 
         <div v-if="view=='dashboards'">
-            <p>Download remote emoncms dashboards <button id="download-dashboards" class="btn">Download</button></p>
-            <pre id="dashboard-output"></pre>
+            <p>Download remote emoncms dashboards <button @click="download_dashboards" class="btn">Download</button></p>
+            <pre v-if="dashboard_log">{{ dashboard_log }}</pre>
         </div>
     </div>
 
@@ -103,13 +93,58 @@
     var app = new Vue({
         el: '#app',
         data: {
+            // Authentication
+            remote_host: "https://emoncms.org",
+            remote_username: "",
+            remote_password: "",
+            remote_apikey: "",
+            show_login: false,
+
             view: 'feeds',
             feeds: {},
             feeds_by_tag: {},
             next_update_seconds: 0,
-            alert: "Connecting to remote emoncms server..."
+            alert: "Connecting to remote emoncms server...",
+
+            dashboard_log: "",
+            input_log: ""
         },
         methods: {
+            // ---------------------
+            // Remote Auth
+            // ---------------------
+            remote_save: function() {
+                var host = this.remote_host;
+                var username = this.remote_username;
+                var password = encodeURIComponent(this.remote_password);
+
+                $(".feed-view").hide();
+                app.alert = "Connecting to remote emoncms server...";
+
+                clearInterval(feed_list_refresh_interval);
+
+                $.ajax({
+                    type: "POST",
+                    url: path + "sync/remote-save",
+                    data: "host=" + host + "&username=" + username + "&password=" + password,
+                    dataType: 'json',
+                    async: true,
+                    success(result) {
+                        if (result.success) {
+                            //remote = result;
+                            // feed list scan
+                            remoteLoad();
+                        } else {
+                            alert(result.message);
+                        }
+                    }
+                });
+            },
+
+            remote_change: function() {
+                this.show_login = true;
+            },
+
             // ---------------------
             // Download feeds
             // ---------------------  
@@ -192,6 +227,34 @@
                         return value.toFixed(1);
                     }
                 }
+            },
+
+            // ---------------------
+            // Dashboards
+            // ---------------------
+            download_dashboards: function() {
+                $.ajax({
+                    url: path + "sync/download-dashboards",
+                    dataType: 'text',
+                    async: true,
+                    success(result) {
+                        dashboard_log = result;
+                    }
+                });
+            },
+
+            // ---------------------
+            // Inputs
+            // ---------------------
+            download_inputs: function() {
+                $.ajax({
+                    url: path + "sync/download-inputs",
+                    dataType: 'text',
+                    async: true,
+                    success(result) {
+                        input_log = result;
+                    }
+                });
             }
         }
     });
@@ -299,9 +362,10 @@
                 } else {
                     //remote=result;
                     app.alert = false;
-                    $("#remote-host").val(result.host);
-                    $("#remote-username").val(result.username);
-                    $("#remote-apikey").val(result.apikey_write);
+                    app.remote_host = result.host;
+                    app.remote_username = result.username;
+                    app.remote_apikey = result.apikey_write;
+
                     if (subaction == "feeds") {
                         app.view = "feeds";
                         syncList();
@@ -317,11 +381,9 @@
                     }
 
                     if (result.username == undefined && result.apikey_write != "") {
-                        $("#login_auth").hide();
-                        $("#apikey_div").show();
+                        app.show_login = false;
                     } else {
-                        $("#login_auth").show();
-                        $("#apikey_div").hide();
+                        app.show_login = true;
                     }
                 }
             },
@@ -338,73 +400,6 @@
         app.alert = "Connecting to remote emoncms server...";
         remoteLoad();
     }
-
-    $("#remote-save").click(function() {
-        var host = $("#remote-host").val();
-        var username = $("#remote-username").val();
-        var password = encodeURIComponent($("#remote-password").val());
-
-        $(".feed-view").hide();
-        app.alert = "Connecting to remote emoncms server...";
-
-        clearInterval(feed_list_refresh_interval);
-
-        $.ajax({
-            type: "POST",
-            url: path + "sync/remove-save",
-            data: "host=" + host + "&username=" + username + "&password=" + password,
-            dataType: 'json',
-            async: true,
-            success(result) {
-                if (result.success) {
-                    //remote = result;
-                    // feed list scan
-                    remoteLoad();
-                } else {
-                    alert(result.message);
-                }
-            }
-        });
-    });
-
-    $("#select-all").click(function() {
-        $(".feed-select-checkbox").each(function() {
-            $(this)[0].checked = true;
-        });
-    });
-
-    $("#select-none").click(function() {
-        $(".feed-select-checkbox").each(function() {
-            $(this)[0].checked = false;
-        });
-    });
-
-    $("#remote-change").click(function() {
-        $("#login_auth").show();
-        $("#apikey_div").hide();
-    });
-
-    $("#download-inputs").click(function() {
-        $.ajax({
-            url: path + "sync/download-inputs",
-            dataType: 'text',
-            async: true,
-            success(result) {
-                $("#input-output").html(result);
-            }
-        });
-    });
-
-    $("#download-dashboards").click(function() {
-        $.ajax({
-            url: path + "sync/download-dashboards",
-            dataType: 'text',
-            async: true,
-            success(result) {
-                $("#dashboard-output").html(result);
-            }
-        });
-    });
 
     setInterval(ticker, 1000);
 
