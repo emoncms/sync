@@ -529,6 +529,7 @@
         remoteLoad();
         // Check emoncms_sync service status
         app.is_service_running();
+        setInterval(app.is_service_running, 10000);
     }
 
     setInterval(ticker, 1000);
