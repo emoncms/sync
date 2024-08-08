@@ -164,6 +164,19 @@ class Sync
                 }
             }
         }
+
+        // Add upload flag to each feed
+        foreach ($feeds as $key=>$f) {
+            $f->upload = 0;
+            if (isset($f->local->id)) {
+                $result = $this->mysqli->query("SELECT upload FROM sync_feeds WHERE `userid`='$userid' AND `local_id`='".$f->local->id."'");
+                if ($result->num_rows) {
+                    $row = $result->fetch_object();
+                    $f->upload = $row->upload;
+                }
+            }
+        }
+
         return $feeds;
     }
     

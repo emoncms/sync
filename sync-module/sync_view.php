@@ -71,7 +71,7 @@
                     </td>
                     <td colspan="6"><b>{{ tag }}</b></td>
                 </tr>
-                <tr v-if="!expandedTags[tag]" v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
+                <tr v-if="expandedTags[tag]" v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
                     <td><input type="checkbox"></td>
                     <td>{{ feed.location }}</td>
                     <td :title="`Start time: ${toDate(feed.local.start_time)}\nInterval: ${interval_format(feed.local.interval)}s`">{{ feed.local.name }}</td>  
@@ -87,6 +87,7 @@
 
                     <td style="cursor:pointer; text-align:center" @click="toggle_upload(tagname)">
                         <i class='icon-ok' v-if="feed.upload"></i>
+                        <span v-else>-</span>
                     </td>
                     
                     <td>
@@ -432,15 +433,21 @@
                     return false;
                 }
 
-                app.feeds = process_feed_list(result);
+                // Populate expandedTags
+                for (var tagname in result) {
+                    let tag = result[tagname].local.tag;
+                    if (app.expandedTags[tag] == undefined) app.expandedTags[tag] = true;
+                }
 
+                app.feeds = process_feed_list(result);
+                
                 // Arrange feeds by tag
                 var feeds_by_tag = {};
                 for (var tagname in app.feeds) {
                     var tag = app.feeds[tagname].local.tag;
                     if (feeds_by_tag[tag] == undefined) feeds_by_tag[tag] = {};
                     feeds_by_tag[tag][tagname] = app.feeds[tagname];
-                }
+                }  
 
                 app.feeds_by_tag = feeds_by_tag;
                 
