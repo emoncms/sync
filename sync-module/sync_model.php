@@ -220,14 +220,7 @@ class Sync
         return array("success"=>true, "result"=>$curl_response);
     }
 
-    // Sync feeds
-    /*
-        $schema['sync_feeds'] = array(
-        'userid' => array('type' => 'int(11)'),
-        'local_id' => array('type' => 'int(11)'),
-        'upload' => array('type' => 'tinyint(1)')
-    );
-    */
+    // Sync feeds flags
 
     public function set_upload_flag($userid,$local_id,$upload)
     {
