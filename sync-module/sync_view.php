@@ -40,20 +40,18 @@
 
         <div style="float:right; padding-top:10px; padding-right:20px" v-if="view=='feeds'">Next update: {{ next_update_seconds }}s</div>
 
-        <br>
-        <div class="input-prepend input-append" v-if="view=='feeds'">
-            <button class="btn" @click="download_all">Download All</button>
-            <button class="btn" @click="upload_all">Upload All</button>
-        </div>
-
         <div class="alert alert-info" v-if="alert">{{ alert }}</div>
 
         <!-- Service status -->
         <div class="alert alert-error" v-if="!service_running">
-            <b>Note:</b> emoncms_sync service is not running, please start the service to enable feed syncing.
+            <!-- red circle with css -->
+            <div style="width: 10px; height: 10px; background-color: red; border-radius: 50%; display: inline-block;"></div>
+            <b>emoncms_sync</b> service is not running, please start the service to enable feed syncing
         </div>
-        <div class="alert alert-success" v-else>
-            <b>Note:</b> emoncms_sync service is running.
+        <div class="alert alert-success" v-if="service_running">
+            <!-- green circle with css -->
+            <div style="width: 10px; height: 10px; background-color: green; border-radius: 50%; display: inline-block;"></div>
+            <b>emoncms_sync</b> service is running, last upload {{ last_upload_time_desc }} ({{ size_format(last_upload_length) }})
         </div>
 
         <table class="table" v-if="view=='feeds'">
@@ -64,7 +62,7 @@
                 <th>Engine</th>
                 <th>Size</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th style="text-align:center">Upload</th>
             </tr>
             <template v-for="(feeds, tag) in feeds_by_tag">
                 <tr style="background-color: #dddddd;; font-size:14px;">
@@ -87,9 +85,9 @@
                     
                     <td>{{ feed.status }}</td>
 
-                    <td>
-                    <i class='icon-arrow-right'></i>
-</td>
+                    <td style="cursor:pointer; text-align:center" @click="toggle_upload(tagname)">
+                        <i class='icon-ok' v-if="feed.upload"></i>
+                    </td>
                     
                     <td>
                         <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
@@ -154,7 +152,10 @@
             dashboard_log: "",
             input_log: "",
 
-            service_running: false
+            service_running: false,
+            last_upload_time: "",
+            last_upload_time_desc: "",
+            last_upload_length: ""
         },
         methods: {
             toggleTag(tag) {
@@ -348,6 +349,10 @@
                         }
                     }
                 });
+            },
+            // Toggle upload
+            toggle_upload: function(tagname) {
+                app.feeds[tagname].upload = !app.feeds[tagname].upload;
             }
         },
         filters: {
@@ -489,6 +494,23 @@
         });
     }
 
+    // Load service last upload time and length
+    function service_status() {
+        $.ajax({
+            url: path + "sync/service-status",
+            dataType: 'json',
+            async: true,
+            success(result) {
+                // result time, time_desc, length 
+                if (result.success) {
+                    app.last_upload_time = result.time;
+                    app.last_upload_time_desc = result.time_desc;
+                    app.last_upload_length = result.length;
+                }
+            }
+        });
+    }
+
     $("#page").html(subaction.charAt(0).toUpperCase() + subaction.slice(1));
 
     if (redis_enabled) {
@@ -499,6 +521,9 @@
     }
 
     setInterval(ticker, 1000);
+
+    service_status();
+    setInterval(service_status, 5000);
 
     function ticker() {
         app.next_update_seconds --;

@@ -206,4 +206,32 @@ class Sync
     
         return array("success"=>true, "result"=>$curl_response);
     }
+
+    // Sync feeds
+    /*
+        $schema['sync_feeds'] = array(
+        'userid' => array('type' => 'int(11)'),
+        'local_id' => array('type' => 'int(11)'),
+        'upload' => array('type' => 'tinyint(1)')
+    );
+    */
+
+    public function set_upload($userid,$local_id,$upload)
+    {
+        $userid = (int) $userid;
+        $local_id = (int) $local_id;
+        $upload = (int) $upload;
+        
+        $result = $this->mysqli->query("SELECT * FROM sync_feeds WHERE `userid`='$userid' AND `local_id`='$local_id'");
+        if ($result->num_rows) {
+            $stmt = $this->mysqli->prepare("UPDATE sync_feeds SET `upload`=? WHERE `userid`=? AND `local_id`=?");
+            $stmt->bind_param("iii",$upload,$userid,$local_id);
+            if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli update");
+        } else {
+            $stmt = $this->mysqli->prepare("INSERT INTO sync_feeds (`userid`,`local_id`,`upload`) VALUES (?,?,?)");
+            $stmt->bind_param("iii",$userid,$local_id,$upload);
+            if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli insert");
+        }
+        return array("success"=>true);
+    }
 }

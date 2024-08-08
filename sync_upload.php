@@ -133,6 +133,8 @@ while(true) {
         continue;
     } else {
         print "- Upload size: ".strlen($upload_str)."\n";
+        $redis->set("emoncms_sync:time",time());    
+        $redis->set("emoncms_sync:len",strlen($upload_str));
     }
 
     $checksum = crc32($upload_str);

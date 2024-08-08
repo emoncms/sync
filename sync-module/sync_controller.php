@@ -314,6 +314,33 @@ function sync_controller()
         return $out;
 
     }
+
+    // Fetch service last upload length and time
+    if ($route->action == "service-status") {
+        $route->format = "json";
+        $time = $redis->get("emoncms_sync:time");
+        $length = $redis->get("emoncms_sync:len");
+
+        if ($time && $length) {
+            $time_desc = "";
+            // Convert to seconds, minutes, hours, days ago
+            $elapsed = time()-$time;
+            if ($elapsed<60) {
+                $time_desc = $elapsed." seconds ago";
+            } else if ($elapsed<3600) {
+                $time_desc = round($elapsed/60)." minutes ago";
+                if (round($elapsed/60)==1) $time_desc = "1 minute ago";
+            } else if ($elapsed<86400) {
+                $time_desc = round($elapsed/3600)." hours ago";
+            } else {
+                $time_desc = round($elapsed/86400)." days ago";
+            }
+
+            return array("success"=>true, "time"=>(int) $time, "time_desc"=>$time_desc, "length"=>(int) $length);
+        } else {
+            return array("success"=>false);
+        }
+    }
     
     return array('content'=>$result);
 }
