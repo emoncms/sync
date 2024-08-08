@@ -127,9 +127,9 @@ while(true) {
         if (!$background_service) die;
 
         // sleep for 60s in 1s intervals check for reload
-        for ($i=0; $i<60; $i++) {
+        for ($i=0; $i<30; $i++) {
             if ($redis->get("emoncms_sync:reload")) break;
-            sleep(1);
+            sleep(2);
         }
         
         foreach ($feeds as $tagname=>$f) {
