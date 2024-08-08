@@ -48,6 +48,14 @@
 
         <div class="alert alert-info" v-if="alert">{{ alert }}</div>
 
+        <!-- Service status -->
+        <div class="alert alert-error" v-if="!service_running">
+            <b>Note:</b> emoncms_sync service is not running, please start the service to enable feed syncing.
+        </div>
+        <div class="alert alert-success" v-else>
+            <b>Note:</b> emoncms_sync service is running.
+        </div>
+
         <table class="table" v-if="view=='feeds'">
             <tr>
                 <th></th>
@@ -78,6 +86,10 @@
                     <td>{{ size_format(feed.local.size) }}</td>
                     
                     <td>{{ feed.status }}</td>
+
+                    <td>
+                    <i class='icon-arrow-right'></i>
+</td>
                     
                     <td>
                         <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
@@ -140,7 +152,9 @@
             alert: "Connecting to remote emoncms server...",
 
             dashboard_log: "",
-            input_log: ""
+            input_log: "",
+
+            service_running: false
         },
         methods: {
             toggleTag(tag) {
@@ -314,6 +328,26 @@
                         alert("Total size of used space for feeds: " + app.size_format(result));
                     }
                 });
+            },
+            // ---------------------
+            // Check emoncms_sync service status
+            // ---------------------
+            is_service_running: function() {
+                $.ajax({
+                    url: path + "admin/service/status?name=emoncms_sync",
+                    async: true,
+                    dataType: "json",
+                    success: function(result) {
+                        if (result.reauth == true) {
+                            window.location.reload(true);
+                        }
+                        if (result.ActiveState == "active") {
+                            app.service_running = true;
+                        } else {
+                            app.service_running = false;
+                        }
+                    }
+                });
             }
         },
         filters: {
@@ -460,6 +494,8 @@
     if (redis_enabled) {
         app.alert = "Connecting to remote emoncms server...";
         remoteLoad();
+        // Check emoncms_sync service status
+        app.is_service_running();
     }
 
     setInterval(ticker, 1000);
