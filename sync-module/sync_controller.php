@@ -153,6 +153,8 @@ function sync_controller()
         usleep(100);
         
         $sync->set_upload_flag($session["userid"],$local_id,$upload);
+        $redis->set("emoncms_sync:reload",1);
+
         /*
         $params = array(
             "action"=>"upload",

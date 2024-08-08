@@ -87,14 +87,22 @@ $max_upload_size = 1024*1024; // 1 MB
 
 while(true) {
 
+    $reload = $redis->get("emoncms_sync:reload");
+    if ($reload) {
+        $feeds = $sync->get_feed_list($userid);
+        $redis->del("emoncms_sync:reload");
+        print "** Reloading feeds **\n";
+    }
+
     $upload_str = "";
 
     foreach ($feeds as $tagname=>$f) {
             
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
+        $upload_flag = $feeds[$tagname]->upload;
         
-        if ($local->exists && $remote->exists) {
+        if ($local->exists && $remote->exists && $upload_flag) {
                         
             // local ahead of remote
             if ($local->npoints>$remote->npoints) {
@@ -117,7 +125,12 @@ while(true) {
         print "- Nothing to upload\n";
         
         if (!$background_service) die;
-        sleep(60);
+
+        // sleep for 60s in 1s intervals check for reload
+        for ($i=0; $i<60; $i++) {
+            if ($redis->get("emoncms_sync:reload")) break;
+            sleep(1);
+        }
         
         foreach ($feeds as $tagname=>$f) {
             
