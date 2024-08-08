@@ -105,71 +105,16 @@ function sync_controller()
     // ---------------------------------------------------------------------------------------------------    
     if ($route->action == "upload") {
         $route->format = "json";
-
-        if (!isset($_GET['name'])) return emoncms_error("missing name parameter");
-        $name = $_GET['name'];
-        
-        if (!isset($_GET['tag'])) return emoncms_error("missing tag parameter");
-        $tag = $_GET['tag'];
         
         if (!isset($_GET['localid'])) return emoncms_error("missing localid parameter");
         $local_id = (int) $_GET['localid'];
         
-        if (!isset($_GET['interval'])) return emoncms_error("missing interval parameter");
-        $interval = (int) $_GET['interval'];
-
-        if (!isset($_GET['engine'])) return emoncms_error("missing engine parameter");
-        $engine = (int) $_GET['engine'];
-
         $upload = 1;
         if (isset($_GET['upload'])) $upload = (int) $_GET['upload'];
-
-        print "upload: $upload\n";
-        
-        // Check that engine is supported
-        if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
-        
-        $remote = $sync->remote_load($session["userid"]);
-                
-        $remote_id = (int) file_get_contents($remote->host."/feed/getid.json?apikey=".$remote->apikey_read."&tag=".urlencode($tag)."&name=".urlencode($name));
-        
-        if (!$remote_id) {
-            print "creating feed";
-        
-            $url = $remote->host."/feed/create.json?";
-            $url .= "apikey=".$remote->apikey_write;
-            $url .= "&name=".urlencode($name);
-            $url .= "&tag=".urlencode($tag);
-            $url .= "&engine=".$engine;
-            $url .= "&options=".json_encode(array("interval"=>$interval));
-
-            $result = json_decode(file_get_contents($url));
-            if ($result->success) {
-                $remote_id = $result->feedid;
-            }
-            
-            print $remote_id;
-        }
-        usleep(100);
         
         $sync->set_upload_flag($session["userid"],$local_id,$upload);
         $redis->set("emoncms_sync:reload",1);
 
-        /*
-        $params = array(
-            "action"=>"upload",
-            "local_id"=>$local_id,
-            "remote_server"=>$remote->host,
-            "remote_id"=>$remote_id,
-            "engine"=>$engine,
-            "remote_apikey"=>$remote->apikey_write
-        );
-        $redis->lpush("sync-queue",json_encode($params));
-        
-        $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
-        $update_logfile = $settings["log"]["location"]."/sync.log";
-        $redis->rpush("service-runner","$update_script>$update_logfile");
-        */
         $result = array("success"=>true);
     }
 

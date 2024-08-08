@@ -93,7 +93,6 @@
                     
                     <td>
                         <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
-                        <!--<button class="btn btn-small" @click="upload_feed(tagname)" v-if="feed.button=='Upload'"><i class='icon-arrow-right'></i> Upload</button>-->
                     </td>
                 </tr>
                 <!-- spacing -->
@@ -231,38 +230,18 @@
             // ---------------------
             upload_all: function() {
                 feeds_to_upload.forEach(function(tagname) {
-                    app.upload_feed(tagname);
-                });
-            },
-            upload_feed: function(tagname) {
-                app.feeds[tagname].status = "Uploading...";
-                let f = app.feeds[tagname].local;
-                var request = "name=" + f.name + "&tag=" + f.tag + "&localid=" + f.id + "&interval=" + f.interval + "&engine=" + f.engine;
-                $.ajax({
-                    url: path + "sync/upload",
-                    data: request,
-                    dataType: 'json',
-                    async: true,
-                    success(result) {
-                        if (result.success) {
-                            // success
-                        } else {
-                            alert(result.message);
-                            app.feeds[tagname].status = "";
-                        }
-                    }
+                    // set upload flag
+                    app.feeds[tagname].upload = true;
+                    app.set_upload(tagname);
                 });
             },
             set_upload: function(tagname) {
-                var upload = app.feeds[tagname].upload*1;
-                if (upload) {
-                    // app.feeds[tagname].status = "Uploading...";
-                }
-                let f = app.feeds[tagname].local;
-                var request = "name=" + f.name + "&tag=" + f.tag + "&localid=" + f.id + "&interval=" + f.interval + "&engine=" + f.engine + "&upload=" + upload;
                 $.ajax({
                     url: path + "sync/upload",
-                    data: request,
+                    data: {
+                        localid: app.feeds[tagname].local.id, 
+                        upload: app.feeds[tagname].upload*1
+                    },
                     dataType: 'json',
                     async: true,
                     success(result) {

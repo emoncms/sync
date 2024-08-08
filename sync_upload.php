@@ -42,26 +42,8 @@ if (isset($argv[1]) && $argv[1]=="all") {
     foreach ($feeds as $tagname=>$f){
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
-
         if ($local->exists && !$remote->exists) {
-            if ($local->engine==Engine::PHPFINA || $local->engine==Engine::PHPTIMESERIES) {
-                print "creating feed\n";
-                print json_encode($local)."\n";
-
-                $url = $host."/feed/create.json?";
-                $url .= "apikey=".$apikey_write;
-                $url .= "&name=".urlencode($local->name);
-                $url .= "&tag=".urlencode($local->tag);
-                $url .= "&engine=".$local->engine;
-                $url .= "&options=".json_encode(array("interval"=>$local->interval));
-
-                $result = json_decode(file_get_contents($url));
-                if ($result->success) {
-                    $remote->exists = true;
-                    $remote->id = $result->feedid;
-                    $remote->npoints = 0;
-                }
-            }
+            $sync->set_upload_flag($userid,$local->id,1);
         } 
     }
 }
@@ -101,9 +83,33 @@ while(true) {
         $local = $feeds[$tagname]->local;
         $remote = $feeds[$tagname]->remote;
         $upload_flag = $feeds[$tagname]->upload;
+
+        // Create remote feed if it does not exist
+        if ($local->exists && !$remote->exists && $upload_flag) {
+            if ($local->engine==Engine::PHPFINA || $local->engine==Engine::PHPTIMESERIES) {
+                print "- Creating feed\n";
+                print json_encode($local)."\n";
+
+                $url = $host."/feed/create.json?";
+                $url .= "apikey=".$apikey_write;
+                $url .= "&name=".urlencode($local->name);
+                $url .= "&tag=".urlencode($local->tag);
+                $url .= "&engine=".$local->engine;
+                $url .= "&options=".json_encode(array("interval"=>$local->interval));
+
+                $result = json_decode(file_get_contents($url));
+                if ($result->success) {
+                    $feeds[$tagname]->remote->exists = true;
+                    $feeds[$tagname]->remote->id = $result->feedid;
+                    $feeds[$tagname]->remote->npoints = 0;
+                    $remote_id_map[$result->feedid] = $tagname;
+                    $remote = $feeds[$tagname]->remote;
+                }
+            }
+        }
         
+        // If local and remote feed exists and upload flag is set: upload
         if ($local->exists && $remote->exists && $upload_flag) {
-                        
             // local ahead of remote
             if ($local->npoints>$remote->npoints) {
                 $bytes_available = $max_upload_size - strlen($upload_str);
