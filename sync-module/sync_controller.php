@@ -120,6 +120,11 @@ function sync_controller()
 
         if (!isset($_GET['engine'])) return emoncms_error("missing engine parameter");
         $engine = (int) $_GET['engine'];
+
+        $upload = 1;
+        if (isset($_GET['upload'])) $upload = (int) $_GET['upload'];
+
+        print "upload: $upload\n";
         
         // Check that engine is supported
         if (!in_array($engine,array(Engine::PHPFINA,Engine::PHPTIMESERIES))) return emoncms_error("unsupported engine");
@@ -147,6 +152,8 @@ function sync_controller()
         }
         usleep(100);
         
+        $sync->set_upload_flag($session["userid"],$local_id,$upload);
+        /*
         $params = array(
             "action"=>"upload",
             "local_id"=>$local_id,
@@ -160,6 +167,7 @@ function sync_controller()
         $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
         $update_logfile = $settings["log"]["location"]."/sync.log";
         $redis->rpush("service-runner","$update_script>$update_logfile");
+        */
         $result = array("success"=>true);
     }
 

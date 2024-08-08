@@ -165,14 +165,14 @@ class Sync
             }
         }
 
+        $upload_flags = $this->get_upload_flags($userid);
+
         // Add upload flag to each feed
         foreach ($feeds as $key=>$f) {
             $f->upload = 0;
             if (isset($f->local->id)) {
-                $result = $this->mysqli->query("SELECT upload FROM sync_feeds WHERE `userid`='$userid' AND `local_id`='".$f->local->id."'");
-                if ($result->num_rows) {
-                    $row = $result->fetch_object();
-                    $f->upload = $row->upload;
+                if (isset($upload_flags[$f->local->id])) {
+                    $f->upload = $upload_flags[$f->local->id];
                 }
             }
         }
@@ -229,7 +229,7 @@ class Sync
     );
     */
 
-    public function set_upload($userid,$local_id,$upload)
+    public function set_upload_flag($userid,$local_id,$upload)
     {
         $userid = (int) $userid;
         $local_id = (int) $local_id;
@@ -246,5 +246,20 @@ class Sync
             if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli insert");
         }
         return array("success"=>true);
+    }
+
+    // Get upload flags for userid
+    public function get_upload_flags($userid)
+    {
+        $userid = (int) $userid;
+        $result = $this->mysqli->query("SELECT * FROM sync_feeds WHERE `userid`='$userid'");
+
+        // arrange by local_id
+        $upload_flags = array();
+        while ($row = $result->fetch_object()) {
+            $upload_flags[$row->local_id] = (int) $row->upload;
+        }
+        
+        return $upload_flags;
     }
 }

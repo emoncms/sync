@@ -63,13 +63,14 @@
                 <th>Size</th>
                 <th>Status</th>
                 <th style="text-align:center">Upload</th>
+                <th></th>
             </tr>
             <template v-for="(feeds, tag) in feeds_by_tag">
                 <tr style="background-color: #dddddd;; font-size:14px;">
                     <td @click="toggleTag(tag)" style="cursor:pointer">
                         <span :class="expandedTags[tag] ? 'icon-chevron-right' : 'icon-chevron-down'"></span>
                     </td>
-                    <td colspan="6"><b>{{ tag }}</b></td>
+                    <td colspan="7"><b>{{ tag }}</b></td>
                 </tr>
                 <tr v-if="expandedTags[tag]" v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
                     <td><input type="checkbox"></td>
@@ -92,7 +93,7 @@
                     
                     <td>
                         <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
-                        <button class="btn btn-small" @click="upload_feed(tagname)" v-if="feed.button=='Upload'"><i class='icon-arrow-right'></i> Upload</button>
+                        <!--<button class="btn btn-small" @click="upload_feed(tagname)" v-if="feed.button=='Upload'"><i class='icon-arrow-right'></i> Upload</button>-->
                     </td>
                 </tr>
                 <!-- spacing -->
@@ -252,6 +253,29 @@
                     }
                 });
             },
+            set_upload: function(tagname) {
+                var upload = app.feeds[tagname].upload*1;
+                if (upload) {
+                    // app.feeds[tagname].status = "Uploading...";
+                }
+                let f = app.feeds[tagname].local;
+                var request = "name=" + f.name + "&tag=" + f.tag + "&localid=" + f.id + "&interval=" + f.interval + "&engine=" + f.engine + "&upload=" + upload;
+                $.ajax({
+                    url: path + "sync/upload",
+                    data: request,
+                    dataType: 'json',
+                    async: true,
+                    success(result) {
+                        if (result.success) {
+                            // success
+                        } else {
+                            alert(result.message);
+                            app.feeds[tagname].status = "";
+                        }
+                    }
+                });
+            },
+
             toDate: function(value) {
                 if (!value) return '';
                 var a = new Date(value * 1000);
@@ -354,6 +378,7 @@
             // Toggle upload
             toggle_upload: function(tagname) {
                 app.feeds[tagname].upload = !app.feeds[tagname].upload;
+                app.set_upload(tagname);
             }
         },
         filters: {
