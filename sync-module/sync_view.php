@@ -45,13 +45,13 @@
         <!-- Service status -->
         <div class="alert alert-error" v-if="!service_running">
             <!-- red circle with css -->
-            <div style="width: 10px; height: 10px; background-color: red; border-radius: 50%; display: inline-block;"></div>
-            <b>emoncms_sync</b> service is not running, please start the service to enable feed syncing
+            <div style="width: 10px; height: 10px; background-color: #aa0000; border-radius: 50%; display: inline-block;"></div>
+            <b>emoncms_sync</b> service is not running, please start the service to enable feed syncing. <span v-if="last_upload_time_desc">Last upload {{ last_upload_time_desc }} ({{ size_format(last_upload_length) }})</span>
         </div>
         <div class="alert alert-success" v-if="service_running">
             <!-- green circle with css -->
             <div style="width: 10px; height: 10px; background-color: green; border-radius: 50%; display: inline-block;"></div>
-            <b>emoncms_sync</b> service is running, last upload {{ last_upload_time_desc }} ({{ size_format(last_upload_length) }})
+            <b>emoncms_sync</b> service is running. <span v-if="last_upload_time_desc">Last upload {{ last_upload_time_desc }} ({{ size_format(last_upload_length) }})</span>
         </div>
 
         <table class="table" v-if="view=='feeds'">
