@@ -236,15 +236,20 @@ class Sync
         $upload = (int) $upload;
         
         $result = $this->mysqli->query("SELECT * FROM sync_feeds WHERE `userid`='$userid' AND `local_id`='$local_id'");
-        if ($result->num_rows) {
-            $stmt = $this->mysqli->prepare("UPDATE sync_feeds SET `upload`=? WHERE `userid`=? AND `local_id`=?");
-            $stmt->bind_param("iii",$upload,$userid,$local_id);
-            if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli update");
+        
+        // if upload is set to 0, remove entry, else update or insert
+        if ($upload==0) {
+            if ($result->num_rows) {
+                $this->mysqli->query("DELETE FROM sync_feeds WHERE `userid`='$userid' AND `local_id`='$local_id'");
+            }
         } else {
-            $stmt = $this->mysqli->prepare("INSERT INTO sync_feeds (`userid`,`local_id`,`upload`) VALUES (?,?,?)");
-            $stmt->bind_param("iii",$userid,$local_id,$upload);
-            if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli insert");
+            if (!$result->num_rows) {
+                $this->mysqli->query("INSERT INTO sync_feeds (`userid`,`local_id`,`upload`) VALUES ('$userid','$local_id','1')");
+            } else {
+                $this->mysqli->query("UPDATE sync_feeds SET `upload`='1' WHERE `userid`='$userid' AND `local_id`='$local_id'");
+            }
         }
+
         return array("success"=>true);
     }
 
@@ -258,6 +263,20 @@ class Sync
         $upload_flags = array();
         while ($row = $result->fetch_object()) {
             $upload_flags[$row->local_id] = (int) $row->upload;
+        }
+
+        $valid_feeds = array();
+        $result = $this->mysqli->query("SELECT id FROM feeds WHERE `userid`='$userid'");
+        while ($row = $result->fetch_object()) {
+            $valid_feeds[$row->id] = 1;
+        }
+
+        // remove invalid feed entries
+        foreach ($upload_flags as $local_id=>$upload) {
+            if (!isset($valid_feeds[$local_id])) {
+                $this->mysqli->query("DELETE FROM sync_feeds WHERE `userid`='$userid' AND `local_id`='$local_id'");
+                unset($upload_flags[$local_id]);
+            }
         }
         
         return $upload_flags;
