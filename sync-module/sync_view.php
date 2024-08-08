@@ -8,6 +8,20 @@
 <p>Download or upload specific feeds as required.</p>
 
 <br>
+<style>
+.grey {
+  background-color: #f0f0f0;
+}
+
+.table td {
+  border-top: 1px solid #fff;
+}
+.icon-chevron-down {
+  margin-top:-1px;
+}
+
+</style>
+
 <?php if ($settings["redis"]["enabled"]) { ?>
 
     <div id="app">
@@ -36,20 +50,35 @@
 
         <table class="table" v-if="view=='feeds'">
             <tr>
+                <th></th>
                 <th>Location</th>
-                <th>Feed Name</th>
+                <th>Name</th>
+                <th>Engine</th>
+                <th>Size</th>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
             <template v-for="(feeds, tag) in feeds_by_tag">
-                <tr style="background-color: #eee">
+                <tr style="background-color: #dddddd;; font-size:14px;">
+                    <td @click="toggleTag(tag)" style="cursor:pointer">
+                        <span :class="expandedTags[tag] ? 'icon-chevron-right' : 'icon-chevron-down'"></span>
+                    </td>
                     <td colspan="6"><b>{{ tag }}</b></td>
                 </tr>
-                <tr v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
+                <tr v-if="!expandedTags[tag]" v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
+                    <td><input type="checkbox"></td>
                     <td>{{ feed.location }}</td>
                     <td :title="`Start time: ${toDate(feed.local.start_time)}\nInterval: ${interval_format(feed.local.interval)}s`">{{ feed.local.name }}</td>  
+                    
+                    <td>
+                        <span v-if="feed.local.engine==5">FIXED ({{ feed.local.interval }}s)</span>
+                        <span v-if="feed.local.engine==2">VARIABLE</span>
+                    </td>
 
+                    <td>{{ size_format(feed.local.size) }}</td>
+                    
                     <td>{{ feed.status }}</td>
+                    
                     <td>
                         <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
                         <button class="btn btn-small" @click="upload_feed(tagname)" v-if="feed.button=='Upload'"><i class='icon-arrow-right'></i> Upload</button>
@@ -57,9 +86,12 @@
                 </tr>
                 <!-- spacing -->
                 <tr><td colspan="6"></td></tr>
+                
 
             </template>
         </table>
+
+        <button v-if="view=='feeds'" class="btn btn-small" @click="refresh_feed_size"><i class="icon-refresh" ></i>&nbsp;<?php echo _('Refresh feed size'); ?></button>
 
 
         <div v-if="view=='inputs'">
@@ -103,6 +135,7 @@
             view: 'feeds',
             feeds: {},
             feeds_by_tag: {},
+            expandedTags: {},
             next_update_seconds: 0,
             alert: "Connecting to remote emoncms server...",
 
@@ -110,6 +143,9 @@
             input_log: ""
         },
         methods: {
+            toggleTag(tag) {
+                this.expandedTags[tag] = !this.expandedTags[tag];
+            },
             // ---------------------
             // Remote Auth
             // ---------------------
@@ -228,6 +264,17 @@
                     }
                 }
             },
+            size_format: function(value) {
+                // value is in bytes 
+                // format to kB or MB
+                if (value < 1000) {
+                    return value + " B";
+                } else if (value < 1000000) {
+                    return (value / 1000).toFixed(1) + " kB";
+                } else {
+                    return (value / 1000000).toFixed(1) + " MB";
+                }
+            },
 
             // ---------------------
             // Dashboards
@@ -255,7 +302,22 @@
                         app.input_log = result;
                     }
                 });
+            },
+            refresh_feed_size: function() {
+                $.ajax({
+                    url: path + "feed/updatesize.json",
+                    dataType: 'json',
+                    async: true,
+                    success(result) {
+                        // update feed list
+                        syncList();
+                        alert("Total size of used space for feeds: " + app.size_format(result));
+                    }
+                });
             }
+        },
+        filters: {
+           
         }
     });
 
@@ -266,7 +328,7 @@
 
         for (var tagname in result) {
             result[tagname].status = "";
-            result[tagname].class = "";
+            result[tagname].class = "grey";
             result[tagname].location = "";
             result[tagname].button = "";
 
@@ -342,8 +404,7 @@
                 }
 
                 app.feeds_by_tag = feeds_by_tag;
-
-
+                
                 app.alert = false;
             }
         });

@@ -115,6 +115,7 @@ class Sync
                 $l->start_time = isset($f->start_time) ? $f->start_time: ''; 
                 $l->interval = isset($f->interval) ? $f->interval: ''; 
                 $l->npoints = isset($f->npoints) ? $f->npoints: ''; 
+                $l->size = isset($f->size) ? $f->size: '';
                 
                 // Create empty remote feed entry
                 // may be overwritten in the next step
