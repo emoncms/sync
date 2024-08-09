@@ -54,6 +54,16 @@
             <b>emoncms_sync</b> service is running. <span v-if="last_upload_time_desc">Last upload {{ last_upload_time_desc }} ({{ size_format(last_upload_length) }})</span>
         </div>
 
+        <div v-if="view=='feeds'">
+            <!-- select all -->
+            <button class="btn btn-small" @click="select_all"><i class="icon-ok-circle"></i> Select all</button>
+            <button class="btn btn-small" @click="unselect_all"><i class="icon-remove-circle"></i> Unselect all</button>
+            <!-- upload selected -->
+            <button class="btn btn-small" v-if="show_upload_selected" @click="upload_selected"><i class="icon-upload"></i> Upload selected</button>
+            <!-- stop upload -->
+            <button class="btn btn-small" v-if="show_stop_upload_selected" @click="stop_upload_selected">Stop upload</button>
+        </div><br>
+
         <table class="table" v-if="view=='feeds'">
             <tr>
                 <th></th>
@@ -73,7 +83,7 @@
                     <td colspan="7"><b>{{ tag }}</b></td>
                 </tr>
                 <tr v-if="expandedTags[tag]" v-for="(feed, tagname) in feeds" v-bind:class="feed.class">
-                    <td><input type="checkbox"></td>
+                    <td><input type="checkbox" v-model="selected[tagname]" @change="select_change"></td>
                     <td>{{ feed.location }}</td>
                     <td :title="`Start time: ${toDate(feed.local.start_time)}\nInterval: ${interval_format(feed.local.interval)}s`">{{ feed.local.name }}</td>  
                     
@@ -155,6 +165,7 @@
             view: 'feeds',
             feeds: {},
             feeds_by_tag: {},
+            selected: {},
             expandedTags: {},
             next_update_seconds: 0,
             alert: "Connecting to remote emoncms server...",
@@ -165,7 +176,10 @@
             service_running: false,
             last_upload_time: "",
             last_upload_time_desc: "",
-            last_upload_length: ""
+            last_upload_length: "",
+
+            show_upload_selected: false,
+            show_stop_upload_selected: false
         },
         methods: {
             toggleTag(tag) {
@@ -370,6 +384,61 @@
                     app.feeds[tagname].upload = !app.feeds[tagname].upload;
                     app.set_upload(tagname);
                 }
+            },
+
+            // Select & unselect all
+            select_all: function() {
+                for (var tagname in app.feeds) {
+                    app.selected[tagname] = true;
+                }
+                app.prepare_selected();
+            },
+            unselect_all: function() {
+                for (var tagname in app.feeds) {
+                    app.selected[tagname] = false;
+                }
+                app.prepare_selected();
+            },
+            select_change: function() {
+                app.prepare_selected();
+
+            },
+            prepare_selected: function() {
+                // If there are no feeds for download in the selected list show upload selected and stop upload buttons.
+                var download = false;
+                var upload = false;
+                var select_count = 0;
+                for (var tagname in app.selected) {
+                    if (app.selected[tagname]) {
+                        if (app.feeds[tagname].button == "Download") download = true;
+                        if (app.feeds[tagname].button == "Upload") upload = true;
+                        select_count++;
+                    }
+                }
+                app.show_upload_selected = !download;
+                app.show_stop_upload_selected = !download;
+
+                if (select_count == 0) {
+                    app.show_upload_selected = false;
+                    app.show_stop_upload_selected = false;
+                }
+
+            },
+            upload_selected: function() {
+                for (var tagname in app.selected) {
+                    if (app.selected[tagname]) {
+                        app.feeds[tagname].upload = true;
+                        app.set_upload(tagname);
+                    }
+                }
+            },
+            stop_upload_selected: function() {
+                for (var tagname in app.selected) {
+                    if (app.selected[tagname]) {
+                        app.feeds[tagname].upload = false;
+                        app.set_upload(tagname);
+                    }
+                }
             }
         },
         filters: {
@@ -453,6 +522,13 @@
                 for (var tagname in result) {
                     let tag = result[tagname].local.tag;
                     if (app.expandedTags[tag] == undefined) app.expandedTags[tag] = true;
+                }
+
+                // Populate selected
+                for (var tagname in result) {
+                    if (app.selected[tagname] == undefined) {
+                        app.selected[tagname] = false;
+                    }
                 }
 
                 app.feeds = process_feed_list(result);
