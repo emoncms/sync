@@ -131,6 +131,12 @@ while(true) {
         print "- Nothing to upload\n";
         
         if (!$background_service) die;
+        
+        // Keep mysql connection open with periodic ping
+        if (!$mysqli->ping()) {
+            print "- mysql ping false\n";
+            die;
+        }
 
         // sleep for 60s in 1s intervals check for reload
         for ($i=0; $i<30; $i++) {
