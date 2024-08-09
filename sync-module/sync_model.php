@@ -146,7 +146,8 @@ class Sync
                     $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
                     $r->interval = isset($f->interval) ? $f->interval: ''; 
                     $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
-                    
+                    $r->size = isset($f->size) ? $f->size: '';
+                 
                     // Only used if no local feed
                     $l = new stdClass();
                     $l->exists = false;

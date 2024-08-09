@@ -78,17 +78,26 @@
                     <td :title="`Start time: ${toDate(feed.local.start_time)}\nInterval: ${interval_format(feed.local.interval)}s`">{{ feed.local.name }}</td>  
                     
                     <td>
-                        <span v-if="feed.local.engine==5">FIXED ({{ feed.local.interval }}s)</span>
-                        <span v-if="feed.local.engine==2">VARIABLE</span>
+                        <span v-if="feed.local.id">
+                            <span v-if="feed.local.engine==5">FIXED ({{ feed.local.interval }}s)</span>
+                            <span v-if="feed.local.engine==2">VARIABLE</span>
+                        </span>
+                        <span v-else>
+                            <span v-if="feed.remote.engine==5">FIXED ({{ feed.remote.interval }}s)</span>
+                            <span v-if="feed.remote.engine==2">VARIABLE</span>
+                        </span>
                     </td>
 
-                    <td>{{ size_format(feed.local.size) }}</td>
+                    <td>
+                        <span v-if="feed.button!='Download'">{{ size_format(feed.local.size) }}</span>
+                        <span v-if="feed.button=='Download'">{{ size_format(feed.remote.size) }}</span>           
+                    </td>
                     
                     <td>{{ feed.status }}</td>
 
                     <td style="cursor:pointer; text-align:center" @click="toggle_upload(tagname)">
                         <i class='icon-ok' v-if="feed.upload"></i>
-                        <span v-else>-</span>
+                        <span v-if="!feed.upload && feed.button!='Download'">-</span>
                     </td>
                     
                     <td>
@@ -356,8 +365,11 @@
             },
             // Toggle upload
             toggle_upload: function(tagname) {
-                app.feeds[tagname].upload = !app.feeds[tagname].upload;
-                app.set_upload(tagname);
+
+                if (app.feeds[tagname].button!='Download') {
+                    app.feeds[tagname].upload = !app.feeds[tagname].upload;
+                    app.set_upload(tagname);
+                }
             }
         },
         filters: {
