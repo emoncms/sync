@@ -5,7 +5,8 @@
         'host' => array('type' => 'varchar(64)'),
         'username' => array('type' => 'varchar(30)'),
         'apikey_read' => array('type' => 'varchar(64)'),
-        'apikey_write' => array('type' => 'varchar(64)')
+        'apikey_write' => array('type' => 'varchar(64)'),
+        'auth_with_apikey' => array('type' => 'int(11)')
     );
 
     // Schema for feed sync (registers feeds to upload)

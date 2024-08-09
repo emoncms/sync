@@ -25,17 +25,16 @@
 <?php if ($settings["redis"]["enabled"]) { ?>
 
     <div id="app">
+
+        <p>Use write apikey for authentication: <input type="checkbox" v-model="auth_with_apikey" style="margin-top:-1px"></p>
+
+
         <div class="input-prepend input-append">
-            <span class="add-on">Host</span><input v-model="remote_host" type="text">
-            <span v-if="show_login">
-                <span class="add-on">Username</span><input v-model="remote_username" type="text" style="width:150px">
-                <span class="add-on">Password</span><input v-model="remote_password" type="text" style="width:150px">
-                <button @click="remote_save" class="btn">Connect</button>
-            </span>
-            <span v-else>
-                <span class="add-on">Apikey</span><input v-model="remote_apikey" type="text" style="width:250px" disabled>
-                <button @click="remote_change" class="btn">Change</button>
-            </span>
+            <span class="add-on">Host</span><input v-model="remote_host" type="text" style="width:150px">
+            <span v-if="!auth_with_apikey" class="add-on">Username</span><input v-if="!auth_with_apikey" v-model="remote_username" type="text" style="width:150px">
+            <span v-if="!auth_with_apikey" class="add-on">Password</span><input v-if="!auth_with_apikey" v-model="remote_password" type="text" style="width:150px">
+            <span v-if="auth_with_apikey"class="add-on">Apikey</span><input v-if="auth_with_apikey" v-model="remote_apikey" type="text" style="width:250px">
+            <button @click="remote_save" class="btn">Connect</button>
         </div>
 
         <div style="float:right; padding-top:10px; padding-right:20px" v-if="view=='feeds'">Next update: {{ next_update_seconds }}s</div>
@@ -156,6 +155,7 @@
         el: '#app',
         data: {
             // Authentication
+            auth_with_apikey: false,
             remote_host: "https://emoncms.org",
             remote_username: "",
             remote_password: "",
@@ -189,19 +189,30 @@
             // Remote Auth
             // ---------------------
             remote_save: function() {
-                var host = this.remote_host;
-                var username = this.remote_username;
-                var password = encodeURIComponent(this.remote_password);
 
                 $(".feed-view").hide();
                 app.alert = "Connecting to remote emoncms server...";
 
                 clearInterval(feed_list_refresh_interval);
 
+                var params = {};
+                if (app.auth_with_apikey) {
+                    params = {
+                        host: this.remote_host,
+                        write_apikey: this.remote_apikey
+                    };
+                } else {
+                    params = {
+                        host: this.remote_host,
+                        username: this.remote_username,
+                        password: encodeURIComponent(this.remote_password)
+                    };
+                }
+
                 $.ajax({
                     type: "POST",
                     url: path + "sync/remote-save",
-                    data: "host=" + host + "&username=" + username + "&password=" + password,
+                    data: params,
                     dataType: 'json',
                     async: true,
                     success(result) {
@@ -562,8 +573,15 @@
                     //remote=result;
                     app.alert = false;
                     app.remote_host = result.host;
-                    app.remote_username = result.username;
-                    app.remote_apikey = result.apikey_write;
+                    app.auth_with_apikey = result.auth_with_apikey*1;
+
+                    if (result.username != undefined) {
+                        app.remote_username = result.username;
+                        app.remote_password = "";
+                    }
+                    if (result.apikey_write != undefined) {
+                        app.remote_apikey = result.apikey_write;
+                    }
 
                     if (subaction == "feeds") {
                         app.view = "feeds";

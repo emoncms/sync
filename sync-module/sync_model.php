@@ -32,11 +32,18 @@ class Sync
     public function remote_load($userid)
     {
         $userid = (int) $userid;
-        if (!$result = $this->mysqli->query("SELECT userid,host,apikey_read,apikey_write FROM sync WHERE `userid`='$userid'")) {
+        if (!$result = $this->mysqli->query("SELECT * FROM sync WHERE `userid`='$userid'")) {
             return array("success"=>false, "message"=>"SQL error");
         }
         
-        if ($row = $result->fetch_object()) return $row;
+        if ($row = $result->fetch_object()) {
+            if (isset($row->auth_with_apikey)) {
+                $row->auth_with_apikey = (int) $row->auth_with_apikey;
+            } else {
+                $row->auth_with_apikey = 0;
+            }
+            return $row;
+        }
         return array("success"=>false);
     }
     
@@ -56,29 +63,50 @@ class Sync
         if (!$result['success']) return array("success"=>false, "message"=>"No response from remote server");
 
         $result = json_decode($result['result']);
-        
-        
-        
+    
         // If successful, save to local sync table
-        if (isset($result->success) && $result->success) {  
-            $apikey_read = $result->apikey_read;
-            $apikey_write = $result->apikey_write;
-
-            // Insert of Update existing entry
-            $result = $this->mysqli->query("SELECT userid FROM sync WHERE `userid`='$userid'");
-            if ($result->num_rows) {
-                $stmt = $this->mysqli->prepare("UPDATE sync SET `host`=?, `username`=?, `apikey_read`=?, `apikey_write`=? WHERE `userid`=?");
-                $stmt->bind_param("ssssi",$host,$username,$apikey_read,$apikey_write,$userid);
-                if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli update");
-            } else {
-                $stmt = $this->mysqli->prepare("INSERT INTO sync (`host`,`username`,`apikey_read`,`apikey_write`,`userid`) VALUES (?,?,?,?,?)");
-                $stmt->bind_param("ssssi",$host,$username,$apikey_read,$apikey_write,$userid);
-                if (!$stmt->execute()) return array("success"=>false, "message"=>"Error on sync module mysqli insert");
-            }
-            return array("success"=>true, "host"=>$host, "username"=>$username, "apikey_read"=>$apikey_read, "apikey_write"=>$apikey_write, "userid"=>$userid);
+        if (isset($result->success) && $result->success) {
+            return $this->remote_save_username_and_keys($userid,$host,$username,$result->apikey_read,$result->apikey_write,0);
         } else {
             return array("success"=>false, "message"=>"Authentication failure, username or password incorrect");
         }
+    }
+
+    public function remote_save_apikey($userid,$host,$write_apikey) {
+        $userid = (int) $userid;
+
+        // Fetch username from remote server
+        $result = json_decode(file_get_contents($host."/user/get.json?apikey=$write_apikey"));
+        if (!$result) {
+            return array("success"=>false, "message"=>"No response from remote server");
+        }
+
+        if (isset($result->id) && $result->id) {
+            return $this->remote_save_username_and_keys($userid,$host,$result->username,$result->apikey_read,$result->apikey_write,1);
+        } else {
+            return array("success"=>false, "message"=>"Authentication failure, apikey incorrect");
+        }
+    }
+
+    public function remote_save_username_and_keys($userid,$host,$username,$apikey_read,$apikey_write, $auth_with_apikey) {
+        $userid = (int) $userid;
+        $auth_with_apikey = (int) $auth_with_apikey;
+
+        // delete al entries for this user
+        $this->mysqli->query("DELETE FROM sync WHERE `userid`='$userid'");
+        $stmt = $this->mysqli->prepare("INSERT INTO sync (`userid`,`host`,`username`,`apikey_read`,`apikey_write`,`auth_with_apikey`) VALUES (?,?,?,?,?,?)");
+        $stmt->bind_param("issssi",$userid,$host,$username,$apikey_read,$apikey_write,$auth_with_apikey);
+        if (!$stmt->execute()) return array("success"=>false, "message"=>"Error saving remote configuration");
+
+        return array(
+            "success"=>true, 
+            "userid"=>$userid, 
+            "host"=>$host, 
+            "username"=>$username, 
+            "apikey_read"=>$apikey_read, 
+            "apikey_write"=>$apikey_write, 
+            'auth_with_apikey'=>$auth_with_apikey
+        );
     }
     
     public function get_feed_list($userid) {

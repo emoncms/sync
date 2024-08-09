@@ -31,10 +31,21 @@ function sync_controller()
     //    local emoncms fetches the remote read and write apikey and stores locally
     if ($route->action == "remote-save") {
         $route->format = "json";
-        $password = post("password");
-        if ($password=="") return array("success"=>false,"message"=>"Password cannot be empty");
-        $_password = urldecode($password);
-        return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
+
+        // Apikey authentication
+        if (isset($_POST['host']) && isset($_POST['write_apikey'])) {
+            return $sync->remote_save_apikey($session["userid"],post("host"),post("write_apikey"));
+        }
+
+        // Username and password authentication
+        if (isset($_POST['host']) && isset($_POST['username']) && isset($_POST['password'])) {
+            $password = post("password");
+            $_password = urldecode($password);
+            if ($password=="") return array("success"=>false,"message"=>"Password cannot be empty");
+            return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
+        }
+
+        return array("success"=>false,"message"=>"Invalid request");
     }
     
     if ($route->action == "remote-load") {
