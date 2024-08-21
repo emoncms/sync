@@ -2,7 +2,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # 1. Create givenergy emoncms service
-cat <<EOF > emoncms_sync.service
+cat <<EOF > $DIR/emoncms_sync.service
 [Unit]
 Description=emoncms_sync service
 StartLimitIntervalSec=10
