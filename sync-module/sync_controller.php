@@ -34,7 +34,10 @@ function sync_controller()
 
         // Apikey authentication
         if (isset($_POST['host']) && isset($_POST['write_apikey'])) {
-            return $sync->remote_save_apikey($session["userid"],post("host"),post("write_apikey"));
+            
+            $result = $sync->remote_save_apikey($session["userid"],post("host"),post("write_apikey"));
+            $redis->set("emoncms_sync:reload",1);
+            return $result;
         }
 
         // Username and password authentication
@@ -42,9 +45,23 @@ function sync_controller()
             $password = post("password");
             $_password = urldecode($password);
             if ($password=="") return array("success"=>false,"message"=>"Password cannot be empty");
-            return $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
+            $result = $sync->remote_save($session["userid"],post("host"),post("username"),$_password);
+            $redis->set("emoncms_sync:reload",1);
+            return $result;
         }
 
+        return array("success"=>false,"message"=>"Invalid request");
+    }
+
+    // Save remote upload_interval
+    if ($route->action == "save-upload-interval") {
+        $route->format = "json";
+        if (isset($_GET['interval'])) {
+            $interval = (int) get("interval");
+            $result = $sync->remote_save_upload_interval($session["userid"],$interval);
+            $redis->set("emoncms_sync:reload",1);
+            return $result;
+        }
         return array("success"=>false,"message"=>"Invalid request");
     }
     

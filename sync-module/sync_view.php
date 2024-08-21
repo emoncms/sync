@@ -36,6 +36,18 @@
             <span v-if="auth_with_apikey"class="add-on">Apikey</span><input v-if="auth_with_apikey" v-model="remote_apikey" type="text" style="width:250px">
             <button @click="remote_save" class="btn">Connect</button>
         </div>
+        
+        <div class="input-prepend input-append" style="margin-left:20px"> 
+            <span class="add-on">Sync interval</span>
+            <select style="width:100px" v-model="upload_interval" @change="save_upload_interval">
+                <option value=300>5 mins</option>
+                <option value=600>10 mins</option>
+                <option value=900>15 mins</option>
+                <option value=1800>30 mins</option>
+                <option value=3600>Hourly</option>
+                <option value=86400>Daily</option>
+            </select>
+        </div>
 
         <div style="float:right; padding-top:10px; padding-right:20px" v-if="view=='feeds'">Next update: {{ next_update_seconds }}s</div>
 
@@ -154,6 +166,8 @@
     var app = new Vue({
         el: '#app',
         data: {
+            upload_interval: 300,
+        
             // Authentication
             auth_with_apikey: false,
             remote_host: "https://emoncms.org",
@@ -450,6 +464,21 @@
                         app.set_upload(tagname);
                     }
                 }
+            },
+            save_upload_interval: function() {
+                $.ajax({
+                    url: path + "sync/save-upload-interval",
+                    data: { interval: app.upload_interval },
+                    dataType: 'json',
+                    async: true,
+                    success(result) {
+                        if (result.success) {
+                            // success
+                        } else {
+                            alert(result.message);
+                        }
+                    }
+                });
             }
         },
         filters: {
@@ -581,6 +610,9 @@
                     }
                     if (result.apikey_write != undefined) {
                         app.remote_apikey = result.apikey_write;
+                    }
+                    if (result.upload_interval != undefined) {
+                        app.upload_interval = 1*result.upload_interval;
                     }
 
                     if (subaction == "feeds") {

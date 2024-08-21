@@ -42,6 +42,17 @@ class Sync
             } else {
                 $row->auth_with_apikey = 0;
             }
+            
+            if (!isset($row->upload_interval)) {
+                $row->upload_interval = 300;
+            } else {
+                $row->upload_interval = (int) $row->upload_interval;
+                // Minimum upload interval
+                if ($row->upload_interval<300) {
+                    $row->upload_interval = 300;
+                }
+            }
+            
             return $row;
         }
         return array("success"=>false);
@@ -72,6 +83,15 @@ class Sync
         }
     }
 
+    // Save upload_interval
+    public function remote_save_upload_interval($userid,$upload_interval) {
+        $userid = (int) $userid;
+        $upload_interval = (int) $upload_interval;
+        if ($upload_interval<300) $upload_interval = 300;
+        $this->mysqli->query("UPDATE sync SET `upload_interval`='$upload_interval' WHERE `userid`='$userid'");
+        return array("success"=>true);
+    }
+
     public function remote_save_apikey($userid,$host,$write_apikey) {
         $userid = (int) $userid;
 
@@ -93,9 +113,17 @@ class Sync
         $auth_with_apikey = (int) $auth_with_apikey;
 
         // delete al entries for this user
+        // copy over upload_interval if it exists
+        $result = $this->mysqli->query("SELECT * FROM sync WHERE `userid`='$userid'");
+        if ($row = $result->fetch_object()) {
+            $upload_interval = $row->upload_interval;
+        } else {
+            $upload_interval = 300;
+        }
+
         $this->mysqli->query("DELETE FROM sync WHERE `userid`='$userid'");
-        $stmt = $this->mysqli->prepare("INSERT INTO sync (`userid`,`host`,`username`,`apikey_read`,`apikey_write`,`auth_with_apikey`) VALUES (?,?,?,?,?,?)");
-        $stmt->bind_param("issssi",$userid,$host,$username,$apikey_read,$apikey_write,$auth_with_apikey);
+        $stmt = $this->mysqli->prepare("INSERT INTO sync (`userid`,`host`,`username`,`apikey_read`,`apikey_write`,`auth_with_apikey`,`upload_interval`) VALUES (?,?,?,?,?,?,?)");
+        $stmt->bind_param("issssi",$userid,$host,$username,$apikey_read,$apikey_write,$auth_with_apikey,$upload_interval);
         if (!$stmt->execute()) return array("success"=>false, "message"=>"Error saving remote configuration");
 
         return array(
@@ -105,7 +133,8 @@ class Sync
             "username"=>$username, 
             "apikey_read"=>$apikey_read, 
             "apikey_write"=>$apikey_write, 
-            'auth_with_apikey'=>$auth_with_apikey
+            'auth_with_apikey'=>$auth_with_apikey,
+            'upload_interval'=>$upload_interval
         );
     }
     

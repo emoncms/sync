@@ -28,6 +28,12 @@ $host = $r->host;
 $apikey_read = $r->apikey_read;
 $apikey_write = $r->apikey_write;
 
+// In practice this is as fast as data is written to disk using feedwriter
+$upload_interval = $r->upload_interval;
+
+$pingInterval = 3600; // Ping MySQL every hour (3600 seconds)
+$lastPingTime = time(); // Initialize the last ping time
+
 $feeds = $sync->get_feed_list($userid);
 if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
     print "Error: could not load feeds\n";
@@ -36,6 +42,7 @@ if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds))
 
 // ------------------------------------------------
 // Option to upload all and create remote feeds if they do not exist
+// Options: sel (selective), all (all..)
 // ------------------------------------------------
 if (isset($argv[1]) && $argv[1]=="all") {
     print "Sync all\n";
@@ -71,6 +78,12 @@ while(true) {
 
     $reload = $redis->get("emoncms_sync:reload");
     if ($reload) {
+        $r = $sync->remote_load($userid);
+        $host = $r->host;
+        $apikey_read = $r->apikey_read;
+        $apikey_write = $r->apikey_write;
+        $upload_interval = $r->upload_interval;
+    
         $feeds = $sync->get_feed_list($userid);
         $redis->del("emoncms_sync:reload");
         print "** Reloading feeds **\n";
@@ -128,21 +141,36 @@ while(true) {
     if (strlen($upload_str)==0) {
 
         print date('m/d/Y h:i:s a', time())."\n";
-        print "- Nothing to upload\n";
+        print "- Nothing to upload";
+        sleep(1); // minimum sleep time
         
-        if (!$background_service) die;
+        if (!$background_service) die("\n");
         
-        // Keep mysql connection open with periodic ping
-        if (!$mysqli->ping()) {
-            print "- mysql ping false\n";
-            die;
-        }
-
-        // sleep for 60s in 1s intervals check for reload
-        for ($i=0; $i<30; $i++) {
+        // Calculate the next synchronized time
+        $currentTime = time();
+        $nextRun = ceil($currentTime / $upload_interval) * $upload_interval;
+        $sleepTime = $nextRun - $currentTime;
+        $sleepCount = round($sleepTime);
+        
+        print " (sleep ".$sleepTime."s)\n";
+                
+        // sleep for sleepTime in 1s intervals check for reload
+        for ($i=0; $i<$sleepCount; $i++) {
             if ($redis->get("emoncms_sync:reload")) break;
-            sleep(2);
+            
+            // Check if it's time to ping the MySQL server
+            if (time() - $lastPingTime >= $pingInterval) {
+                if (!$mysqli->ping()) {
+                    print "- mysql ping false\n";
+                    die;
+                }
+                $lastPingTime = time();
+            }
+            
+            sleep(1);
         }
+        // next upload 5s after sync point so that we sync after feedwriter has written to disk
+        sleep(4);
         
         foreach ($feeds as $tagname=>$f) {
             
@@ -157,6 +185,7 @@ while(true) {
         
         continue;
     } else {
+        print date('m/d/Y h:i:s a', time())."\n";
         print "- Upload size: ".strlen($upload_str)."\n";
         $redis->set("emoncms_sync:time",time());    
         $redis->set("emoncms_sync:len",strlen($upload_str));
