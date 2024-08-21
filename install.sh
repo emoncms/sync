@@ -1,6 +1,10 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+if [ -f /opt/openenergymonitor/EmonScripts/common/emoncmsdbupdate.php ]; then
+    php /opt/openenergymonitor/EmonScripts/common/emoncmsdbupdate.php
+fi
+
 # 1. Create givenergy emoncms service
 cat <<EOF > $DIR/emoncms_sync.service
 [Unit]
