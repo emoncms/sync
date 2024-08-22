@@ -123,7 +123,7 @@ class Sync
 
         $this->mysqli->query("DELETE FROM sync WHERE `userid`='$userid'");
         $stmt = $this->mysqli->prepare("INSERT INTO sync (`userid`,`host`,`username`,`apikey_read`,`apikey_write`,`auth_with_apikey`,`upload_interval`) VALUES (?,?,?,?,?,?,?)");
-        $stmt->bind_param("issssi",$userid,$host,$username,$apikey_read,$apikey_write,$auth_with_apikey,$upload_interval);
+        $stmt->bind_param("issssii",$userid,$host,$username,$apikey_read,$apikey_write,$auth_with_apikey,$upload_interval);
         if (!$stmt->execute()) return array("success"=>false, "message"=>"Error saving remote configuration");
 
         return array(
