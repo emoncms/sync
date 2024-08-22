@@ -1,24 +1,54 @@
-# Sync module for emoncms
+# Emoncms Sync Module
 
-Download and upload feeds between a local and remote emoncms server
+The Emoncms sync module provides a convenient way to syncronise (upload or download) timeseries feed data between two instances of Emoncms. This will typically be a emonPi or emonBase in the home or building being monitored and a remote server such as [emoncms.org](https://emoncms.org):
 
-![syncmodule.png](syncmodule3.png)
+![emoncms_sync_overview.png](img/emoncms_sync_overview.png)
 
-1. Login to your local installation of emoncms.
-2. Navigate to Setup > Sync
-3. Enter your emoncms.org username and password to bring up the list of available feeds.
-4. Click Download all, or download feeds individually
-5. Browse the feeds locally, that's it!
+## Automatic periodic upload
 
-You may also be interested in the python based emoncms backup utility if you do not wish to setup a local emoncms instance to download/backup/archive emoncms data from a remote server such as emoncms.org: https://github.com/emoncms/usefulscripts/tree/master/backup_py
+**Background and overview:** Historically a piece of software called emonHub has been the default way to post input data to both the local emoncms installation running on an emonPi/base and to a remote server such as emoncms.org. The disadvantage of this approach has been the need to configure input processing twice for applications that require both local and remote logging. **The sync module can be used instead of the *emonHub Emoncms HTTP interfacer*** that posts data to the remote server. Input processing only needs to be configured once on the local emonPi/base as it's the resulting feed data that gets uploaded and replicated to the remote server.
+
+The sync module automatic upload mechanism is **both bandwidth efficient** with data uploaded in binary format and also **resilient to internet connection outages**. In the event of an internet outage, feed data will still be recorded locally on the emonPi/base and the sync module will retry uploading new feed data until successful.
+
+## Manual download
+
+The sync module also provides a way download feed data from a remote server onto the local emoncms instance. This can be useful for recovery in the event of SD card failure, backing up data on a remote server, or for applications where it makes sense to move from recording data remotely to local only. Data download is a one time manual process rather than an automated periodic sync.
+
+## Using the Sync module
+Login to your local installation of emoncms. **Navigate to Setup > Sync.**
+
+
+![syncmodule.png](img/syncmodule3.png)
+
+
+### Authentication
+
+It's possible to link your local emoncms instance with the remote server with either **username and password login** or a **write apikey**. The default remote server is **emoncms.org** change this as required if you are using a different remote server. Enter the relevant credentials and then click Connect. 
+
+**HTTPS vs HTTP:** While HTTPS provides clear security benefits with both secure authentication and encryption, it does add a significant bandwidth overhead. If you have a bandwidth constrained application where security is of lower concern consider using HTTP instead. Bandwidth can also be reduced significantly by choosing a longer upload interval e.g hourly or daily.
+
+**Login authentication:**
+
+![auth_login](img/auth_login.png)
+
+**Write apikey authentication:**
+
+![auth_login](img/auth_apikey.png)
+
+### Upload interval
+
+The default upload interval is every 5 minutes. If you have a bandwidth constrained application consider using a longer upload interval.
+
+![sync_interval](img/sync_interval.png)
+
+### Select 
+
+
+
 
 ### Automatic EmonPi, Emonbase Update
 
-The Sync module is included in the default EmonPi/EmonBase software stack as of 26th April 2018. If you do not see the sync module under the emoncms Setup tab try running EmonPi or EmonBase update from the Administration page on your EmonPi/EmonBase.
-
-## Automatic sync 
-
-Version 3.x.x includes a background service called emoncms_sync.service that handles automatic upload of data to a remote server at a regular interval.
+The Sync module is included in the default EmonPi/EmonBase software stack. If you do not see the sync module under the emoncms Setup tab try running EmonPi or EmonBase update from the Administration page on your EmonPi/EmonBase.
 
 ### Manual Linux Installation
 
@@ -41,7 +71,6 @@ Run the installation script:
 
 The sync module downloads data using a script that runs in the background. This script is automatically called using the emoncms service runner. See [Emoncms: Service-runner installation details here](https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md).
 
-### Troubleshooting
+### Backup utility
 
-- Check that the $homedir or $emoncms_dir setting is set appropriately on your emoncms installation
-- If your emoncms installation is in /var/www/html/emoncms, make a symlink to /var/www/emoncms as described above.
+You may also be interested in the python based emoncms backup utility if you do not wish to setup a local emoncms instance to download/backup/archive emoncms data from a remote server such as emoncms.org: https://github.com/emoncms/usefulscripts/tree/master/backup_py
