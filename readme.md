@@ -2,7 +2,7 @@
 
 Download and upload feeds between a local and remote emoncms server
 
-![syncmodule.png](syncmodule.png)
+![syncmodule.png](syncmodule3.png)
 
 1. Login to your local installation of emoncms.
 2. Navigate to Setup > Sync
@@ -18,9 +18,7 @@ The Sync module is included in the default EmonPi/EmonBase software stack as of 
 
 ## Automatic sync 
 
-By default the sync module will only sync when the user clicks 'sync' in the web interface, to enable automatic periodic sync add this entry to crontab using `crontab -e` e.g to sync every 1 hr
-
-`0 * * * * php /opt/emoncms/modules/sync/sync_upload.php`
+Version 3.x.x includes a background service called emoncms_sync.service that handles automatic upload of data to a remote server at a regular interval.
 
 ### Manual Linux Installation
 
@@ -34,23 +32,16 @@ Install the sync module to /opt/emoncms/modules (you may need to create those di
 
     cd /opt/emoncms/modules
     git clone https://github.com/emoncms/sync.git
-
-Symlink the web part of the sync module to the public html emoncms modules directory:
-
-    ln -s /opt/emoncms/modules/sync/sync-module /var/www/emoncms/Modules/sync
     
-Update the emoncms mysql database via the Admin > Update interface. Click on 'Update Database' next to the 'Update Database Only' option.
+Run the installation script:
+
+    ./install.sh
     
 ### Install Service Runner
 
-The sync module downloads or uploads data using a script that runs in the background. This script can be automatically called using the emoncms service runner. See [Emoncms: Service-runner installation details here](https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md).
+The sync module downloads data using a script that runs in the background. This script is automatically called using the emoncms service runner. See [Emoncms: Service-runner installation details here](https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md).
 
 ### Troubleshooting
 
 - Check that the $homedir or $emoncms_dir setting is set appropriately on your emoncms installation
 - If your emoncms installation is in /var/www/html/emoncms, make a symlink to /var/www/emoncms as described above.
-
-To run the sync process manually:
-
-    cd /opt/emoncms/modules/sync
-    sudo php sync_run.php
