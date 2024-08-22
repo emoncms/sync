@@ -41,10 +41,19 @@ The default upload interval is every 5 minutes. If you have a bandwidth constrai
 
 ![sync_interval](img/sync_interval.png)
 
-### Select 
+### Select feeds to upload
 
+Feeds to upload can either be selected by selecting each feed via the checkbox field on the left and then clicking on **Upload selected** - or - clicking on the Upload column for each feed (blue circle) which will toggle the upload status directly.
 
+![select_feeds.png](img/select_feeds.png)
 
+Once selected feeds will upload within a few seconds. If the remote feed is up to date with the local feed the feeds will be highlighted in green and status will note: "Local and Remote are the same":
+
+![select_feeds.png](img/selected_feeds.png)
+
+These feeds will now continue to be syncronised at the selected sync interval.
+
+---
 
 ### Automatic EmonPi, Emonbase Update
 
