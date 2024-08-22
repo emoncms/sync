@@ -1,6 +1,6 @@
 # Emoncms Sync Module
 
-The Emoncms sync module provides a convenient way to syncronise (upload or download) timeseries feed data between two instances of Emoncms. This will typically be a emonPi or emonBase in the home or building being monitored and a remote server such as [emoncms.org](https://emoncms.org):
+The Emoncms sync module provides a convenient way to synchronise (upload or download) timeseries feed data between two instances of Emoncms. This will typically be a emonPi or emonBase in the home or building being monitored and a remote server such as [emoncms.org](https://emoncms.org):
 
 ![emoncms_sync_overview.png](img/emoncms_sync_overview.png)
 
@@ -51,21 +51,40 @@ Once selected feeds will upload within a few seconds. If the remote feed is up t
 
 ![select_feeds.png](img/selected_feeds.png)
 
-These feeds will now continue to be syncronised at the selected sync interval.
+These feeds will now continue to be synchronised at the selected sync interval.
+
+### Downloading feeds
+
+If a feed only exists on the remote server or if the remote server is ahead of the local server a **Download** button will appear next to these feeds. Click on each feed to download. Unlike the sync upload option above downloaded feeds will not automatically download new data available on the remote server, this is a manual download option.
+
+![download](img/download.png)
 
 ---
 
-### Automatic EmonPi, Emonbase Update
+## Update
 
-The Sync module is included in the default EmonPi/EmonBase software stack. If you do not see the sync module under the emoncms Setup tab try running EmonPi or EmonBase update from the Administration page on your EmonPi/EmonBase.
+### EmonPi, Emonbase Update
 
-### Manual Linux Installation
+The Sync module is included in the default EmonPi/EmonBase software stack. It can be updated by navigating to Admin > Update and clicking on Full Update. Alternatively to selectively update this module, navigate to Admin > Components and update both Emoncms Core and the Sync module on this page.
 
-**Note:** The sync module has hard coded paths for the emoncms directory location that point to: /var/www/emoncms. If your installation has emoncms installed in /var/www/html/emoncms you will need a symlink to /var/www/emoncms:
+### Command line update
 
-    ln -s /var/www/html/emoncms /var/www/emoncms
-    
-The setting **$home_dir** or **$emoncms_dir** in emoncms settings.php also need to be set to reflect your system.    
+To update via command line:
+
+1\. Update Emoncms core:
+
+    cd /var/www/emoncms
+    git pull
+
+2\. Update the sync module:
+
+    cd /opt/emoncms/modules/sync
+    git pull
+    ./install.sh
+
+## Install
+
+**Note:** The sync module has hard coded paths for the emoncms directory location that point to: /var/www/emoncms.
 
 Install the sync module to /opt/emoncms/modules (you may need to create those directories first):
 
@@ -74,11 +93,12 @@ Install the sync module to /opt/emoncms/modules (you may need to create those di
     
 Run the installation script:
 
+    cd /opt/emoncms/modules/sync 
     ./install.sh
     
 ### Install Service Runner
 
-The sync module downloads data using a script that runs in the background. This script is automatically called using the emoncms service runner. See [Emoncms: Service-runner installation details here](https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md).
+The sync module downloads data via a background process called by the service-runner service. Service runner is installed as standard on the emonPi/emonBase emonSD software stack. For manual installation please see: [Emoncms: Service-runner installation details here](https://github.com/emoncms/emoncms/blob/master/scripts/services/install-service-runner-update.md).
 
 ### Backup utility
 
