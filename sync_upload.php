@@ -37,7 +37,7 @@ $lastPingTime = time(); // Initialize the last ping time
 $feeds = $sync->get_feed_list($userid);
 if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
     print "Error: could not load feeds\n";
-    die;
+    $feeds = array();
 }
 
 // ------------------------------------------------
@@ -85,6 +85,14 @@ while(true) {
         $upload_interval = $r->upload_interval;
     
         $feeds = $sync->get_feed_list($userid);
+        
+        $remote_id_map = array();
+        foreach ($feeds as $tagname=>$f) {
+            if ($feeds[$tagname]->remote->exists) {
+                $remote_id_map[$feeds[$tagname]->remote->id] = $tagname;
+            }
+        }
+        
         $redis->del("emoncms_sync:reload");
         print "** Reloading feeds **\n";
     }

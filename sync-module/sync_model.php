@@ -32,11 +32,11 @@ class Sync
     public function remote_load($userid)
     {
         $userid = (int) $userid;
-        if (!$result = $this->mysqli->query("SELECT * FROM sync WHERE `userid`='$userid'")) {
-            return array("success"=>false, "message"=>"SQL error");
-        }
+        $result = $this->mysqli->query("SELECT * FROM sync WHERE `userid`='$userid'");
         
         if ($row = $result->fetch_object()) {
+            $row->success = true;
+        
             if (isset($row->auth_with_apikey)) {
                 $row->auth_with_apikey = (int) $row->auth_with_apikey;
             } else {
@@ -54,8 +54,16 @@ class Sync
             }
             
             return $row;
+        } else {
+            $row = new StdClass();
+            $row->success = false;
+            $row->host = "";
+            $row->username = "";
+            $row->apikey_read = "";
+            $row->apikey_write = "";
+            $row->upload_interval = 300;
+            return $row;
         }
-        return array("success"=>false);
     }
     
     public function remote_save($userid,$host,$username,$password) 
