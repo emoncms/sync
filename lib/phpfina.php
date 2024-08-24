@@ -189,6 +189,8 @@ function prepare_phpfina_segment($datadir,$local,$remote,$bytes_available) {
 function request($url, $data)
 {
     $curl = curl_init($url);
+    
+    $start_time = time();
 
     if ($curl === false) {
         return array("success"=>false, "message"=>"failed to init curl");
@@ -214,7 +216,8 @@ function request($url, $data)
         curl_close($curl);
 
         if ($error_code == CURLE_OPERATION_TIMEOUTED) {
-            return array("success"=>false, "message"=>"timeout error");
+            $elapsed = round(time() - $start_time);
+            return array("success"=>false, "message"=>"timeout error (".$elapsed."s)");
         } else {
             return array("success"=>false, "message"=>$error_msg);       
         }
