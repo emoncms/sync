@@ -73,6 +73,8 @@
             <button class="btn btn-small" v-if="show_upload_selected" @click="upload_selected"><i class="icon-upload"></i> Upload selected</button>
             <!-- stop upload -->
             <button class="btn btn-small" v-if="show_stop_upload_selected" @click="stop_upload_selected">Stop upload</button>
+            <!-- download all that are available to download -->
+            <button class="btn btn-small" @click="download_all" v-if="available_to_download_count"><i class="icon-download"></i> Download all ({{ available_to_download_count }})</button>
         </div><br>
 
         <table class="table" v-if="view=='feeds'">
@@ -193,7 +195,9 @@
             last_upload_length: "",
 
             show_upload_selected: false,
-            show_stop_upload_selected: false
+            show_stop_upload_selected: false,
+
+            available_to_download_count: 0
         },
         methods: {
             toggleTag(tag) {
@@ -515,6 +519,7 @@
                         result[tagname].status = "Local behind Remote by " + (result[tagname].remote.npoints - result[tagname].local.npoints) + " points";
                         result[tagname].class = "warning";
                         result[tagname].button = "Download";
+                        app.available_to_download_count++;
                         feeds_to_download.push(tagname);
 
                     } else {

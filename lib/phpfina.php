@@ -125,12 +125,13 @@ function phpfina_download($local_datadir,$local_id,$remote_server,$remote_id,$re
     if ($dnsize>=4) {
         // Last time and value
         $d = substr($data,strlen($data)-4,4);
-        $val = unpack("f",$d);
-        
-        clearstatcache($local_datadir.$local_id.".dat");
-        $npoints = floor(filesize($local_datadir.$local_id.".dat")/4);
-        $time = $local_meta->start_time + ($local_meta->interval * $npoints);
-        $lastvalue = array("time"=>$time, "value"=>$val[1]);
+        if (strlen($d)==4) {
+            $val = unpack("f",$d);
+            clearstatcache($local_datadir.$local_id.".dat");
+            $npoints = floor(filesize($local_datadir.$local_id.".dat")/4);
+            $time = $local_meta->start_time + ($local_meta->interval * $npoints);
+            $lastvalue = array("time"=>$time, "value"=>$val[1]);
+        }
     }
     
     echo "--downloaded: ".$dnsize." bytes\n";
