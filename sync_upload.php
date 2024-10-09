@@ -37,6 +37,9 @@ $lastPingTime = time(); // Initialize the last ping time
 $feeds = $sync->get_feed_list($userid);
 if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
     print "Error: could not load feeds\n";
+    if (isset($feeds['message'])) {
+        print $feeds['message']."\n";
+    }
     $feeds = array();
 }
 
