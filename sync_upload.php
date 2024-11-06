@@ -31,15 +31,17 @@ $apikey_write = $r->apikey_write;
 // In practice this is as fast as data is written to disk using feedwriter
 $upload_interval = $r->upload_interval;
 
+$upload_size = 1024*1024; // 1MB
+if (isset($r->upload_size)) {
+    $upload_size = $r->upload_size;
+}
+
 $pingInterval = 3600; // Ping MySQL every hour (3600 seconds)
 $lastPingTime = time(); // Initialize the last ping time
 
 $feeds = $sync->get_feed_list($userid);
 if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
     print "Error: could not load feeds\n";
-    if (isset($feeds['message'])) {
-        print $feeds['message']."\n";
-    }
     $feeds = array();
 }
 
@@ -73,10 +75,6 @@ foreach ($feeds as $tagname=>$f) {
     }
 }
 
-// Standard apache2 upload limit is 2 MB
-// we limit upload size to a conservative 1 MB here
-$max_upload_size = 1024*1024; // 1 MB
-
 while(true) {
 
     $reload = $redis->get("emoncms_sync:reload");
@@ -86,6 +84,10 @@ while(true) {
         $apikey_read = $r->apikey_read;
         $apikey_write = $r->apikey_write;
         $upload_interval = $r->upload_interval;
+
+        if (isset($r->upload_size)) {
+            $upload_size = $r->upload_size;
+        }
     
         $feeds = $sync->get_feed_list($userid);
         
@@ -136,7 +138,7 @@ while(true) {
         if ($local->exists && $remote->exists && $upload_flag) {
             // local ahead of remote
             if ($local->npoints>$remote->npoints) {
-                $bytes_available = $max_upload_size - strlen($upload_str);
+                $bytes_available = $upload_size - strlen($upload_str);
                     
                 if ($local->engine==Engine::PHPFINA) {
                     $upload_str .= prepare_phpfina_segment($settings['feed']['phpfina']['datadir'],$local,$remote,$bytes_available);

@@ -64,6 +64,18 @@ function sync_controller()
         }
         return array("success"=>false,"message"=>"Invalid request");
     }
+
+    // Save remote upload size, 1000000 = 1MB, 100000 = 100KB
+    if ($route->action == "save-upload-size") {
+        $route->format = "json";
+        if (isset($_GET['size'])) {
+            $size = (int) get("size");
+            $result = $sync->remote_save_upload_size($session["userid"],$size);
+            $redis->set("emoncms_sync:reload",1);
+            return $result;
+        }
+        return array("success"=>false,"message"=>"Invalid request");
+    }
     
     if ($route->action == "remote-load") {
         $route->format = "json";

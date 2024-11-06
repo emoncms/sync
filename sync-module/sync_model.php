@@ -100,6 +100,20 @@ class Sync
         return array("success"=>true);
     }
 
+    // Save upload size
+    public function remote_save_upload_size($userid,$size) {
+        $userid = (int) $userid;
+        $size = (int) $size;
+
+        // Upload size options are: 1000000 and 100000
+        if ($size!=1000000 && $size!=100000) {
+            return array("success"=>false, "message"=>"Invalid upload size");
+        }
+
+        $this->mysqli->query("UPDATE sync SET `upload_size`='$size' WHERE `userid`='$userid'");
+        return array("success"=>true);
+    }
+
     public function remote_save_apikey($userid,$host,$write_apikey) {
         $userid = (int) $userid;
 

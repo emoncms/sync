@@ -49,6 +49,15 @@
             </select>
         </div>
 
+        <!-- Upload size 1MB, 100kB -->
+        <div class="input-prepend input-append" style="margin-left:20px">
+            <span class="add-on">Upload size</span>
+            <select style="width:100px" v-model="upload_size" @change="save_upload_size">
+                <option value=100000>100kB</option>
+                <option value=1000000>1MB</option>
+            </select>
+        </div>
+
         <div style="float:right; padding-top:10px; padding-right:20px" v-if="view=='feeds'">Next update: {{ next_update_seconds }}s</div>
 
         <div class="alert alert-info" v-if="alert">{{ alert }}</div>
@@ -197,7 +206,9 @@
             show_upload_selected: false,
             show_stop_upload_selected: false,
 
-            available_to_download_count: 0
+            available_to_download_count: 0,
+
+            upload_size: 1000000
         },
         methods: {
             toggleTag(tag) {
@@ -483,6 +494,22 @@
                         }
                     }
                 });
+            },
+
+            save_upload_size: function() {
+                $.ajax({
+                    url: path + "sync/save-upload-size",
+                    data: { size: app.upload_size },
+                    dataType: 'json',
+                    async: true,
+                    success(result) {
+                        if (result.success) {
+                            // success
+                        } else {
+                            alert(result.message);
+                        }
+                    }
+                });
             }
         },
         filters: {
@@ -618,6 +645,9 @@
                     }
                     if (result.upload_interval != undefined) {
                         app.upload_interval = 1*result.upload_interval;
+                    }
+                    if (result.upload_size != undefined) {
+                        app.upload_size = 1*result.upload_size;
                     }
 
                     if (subaction == "feeds") {
