@@ -39,6 +39,9 @@ if (isset($r->upload_size)) {
 $pingInterval = 3600; // Ping MySQL every hour (3600 seconds)
 $lastPingTime = time(); // Initialize the last ping time
 
+// Record time since last upload
+$last_upload_time = time();
+
 $feeds = $sync->get_feed_list($userid);
 if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
     print "Error: could not load feeds\n";
@@ -202,6 +205,8 @@ while(true) {
         print "- Upload size: ".strlen($upload_str)."\n";
         $redis->set("emoncms_sync:time",time());    
         $redis->set("emoncms_sync:len",strlen($upload_str));
+
+        $last_upload_time = time();
     }
 
     $checksum = crc32($upload_str);
@@ -236,5 +241,16 @@ while(true) {
         $feeds[$tagname]->remote->start_time = $updated_feed->start_time;
         $feeds[$tagname]->remote->interval = $updated_feed->interval;
     }
+
+
+    // More than upload interval x 6
+    $time_since_last_upload = time() - $last_upload_time;
+    if ($time_since_last_upload > ($upload_interval*6) || $time_since_last_upload > (86400*2)) {
+        print "- Last upload more than 6x upload interval ago, exiting\n";
+        if (!$background_service) die();
+        sleep(60);
+        continue;
+    }
+
     sleep(1);
 }
