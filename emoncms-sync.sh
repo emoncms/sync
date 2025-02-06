@@ -1,3 +1,7 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-sudo php $DIR/sync_run.php
+if [ -f "/.dockerenv" ]; then
+    php $DIR/sync_run.php
+else
+    sudo php $DIR/sync_run.php
+fi
