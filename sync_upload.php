@@ -11,7 +11,7 @@ require "lib/phpfina.php";
 require "lib/phptimeseries.php";
 
 require_once "/var/www/emoncms/Lib/load_emoncms.php";
-
+require_once "core.php";
 require_once "Modules/feed/feed_model.php";
 $feed = new Feed($mysqli,$redis,$settings["feed"]);
 
