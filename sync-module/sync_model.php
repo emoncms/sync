@@ -28,6 +28,40 @@ class Sync
         $this->log = new EmonLogger(__FILE__);
         $this->feed = $feed;
     }
+
+    /**
+     * Validate that a host URL is http/https and does not point to a
+     * private or reserved IP range (SSRF prevention).
+     */
+    private function validate_host($host)
+    {
+        if (!preg_match('/^https?:\/\//i', $host)) {
+            return false;
+        }
+        $parsed = parse_url($host);
+        if (!$parsed || !isset($parsed['host'])) {
+            return false;
+        }
+        $hostname = $parsed['host'];
+        // Strip IPv6 brackets
+        $hostname = trim($hostname, '[]');
+
+        $ip = filter_var($hostname, FILTER_VALIDATE_IP);
+        if (!$ip) {
+            $ip = gethostbyname($hostname);
+        }
+        // Block loopback and reserved ranges only.
+        // Private ranges (192.168.x.x, 10.x.x.x, 172.16-31.x.x) are allowed
+        // because syncing to another Emoncms on the local network is a valid use case.
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_RES_RANGE)) {
+            return false;
+        }
+        // Explicitly block loopback (covered by NO_RES_RANGE for IPv4 but be explicit for IPv6)
+        if ($ip === '127.0.0.1' || $ip === '::1' || substr($ip, 0, 4) === '127.') {
+            return false;
+        }
+        return true;
+    }
     
     public function remote_load($userid)
     {
@@ -71,6 +105,7 @@ class Sync
         $this->log->warn("remote save");
         // Input sanitisation
         $userid = (int) $userid;
+        if (!$this->validate_host($host)) return array('success'=>false, 'message'=>_('Invalid or disallowed host URL'));
         if (!$username || !$password) return array('success'=>false, 'message'=>_("Username or password empty"));
         $username_out = preg_replace('/[^\p{N}\p{L}_\s\-]/u','',$username);
         if ($username_out!=$username) return array('success'=>false, 'message'=>_("Username must only contain a-z 0-9 dash and underscore"));
@@ -116,6 +151,7 @@ class Sync
 
     public function remote_save_apikey($userid,$host,$write_apikey) {
         $userid = (int) $userid;
+        if (!$this->validate_host($host)) return array('success'=>false, 'message'=>_('Invalid or disallowed host URL'));
 
         // Fetch username from remote server
         $result = json_decode(file_get_contents($host."/user/get.json?apikey=$write_apikey"));

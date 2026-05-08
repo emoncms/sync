@@ -94,10 +94,12 @@ function sync_controller()
         $route->format = "json";
         
         if (!isset($_GET['name'])) return emoncms_error("missing name parameter");
-        $name = $_GET['name'];
+        $name = preg_replace('/[^\p{N}\p{L}_\s\-:]/u', '', $_GET['name']);
+        if ($name !== $_GET['name']) return emoncms_error("invalid characters in feed name");
         
         if (!isset($_GET['tag'])) return emoncms_error("missing tag parameter");
-        $tag = $_GET['tag'];
+        $tag = preg_replace('/[^\p{N}\p{L}_\s\-:]/u', '', $_GET['tag']);
+        if ($tag !== $_GET['tag']) return emoncms_error("invalid characters in feed tag");
         
         if (!isset($_GET['remoteid'])) return emoncms_error("missing remoteid parameter");
         $remote_id = (int) $_GET['remoteid'];
