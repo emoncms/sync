@@ -135,9 +135,7 @@ function sync_controller()
         );
         $redis->lpush("sync-queue",json_encode($params));
         
-        $update_script = "$linked_modules_dir/sync/emoncms-sync.sh";
-        $update_logfile = $settings["log"]["location"]."/sync.log";
-        $redis->rpush("service-runner","$update_script>$update_logfile");
+        $redis->rpush("service-runner", json_encode(["run" => "sync-run", "args" => [], "log" => "sync"]));
         
         $result = array("success"=>true);
     }
