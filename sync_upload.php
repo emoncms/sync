@@ -47,6 +47,8 @@ if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds))
     print "Error: could not load feeds\n";
     $feeds = array();
 }
+$last_remote_reload = time();
+$remote_reload_interval = 300; // retry remote feed list every 5 minutes when no remote found
 
 // ------------------------------------------------
 // Option to upload all and create remote feeds if they do not exist
@@ -198,7 +200,29 @@ while(true) {
                 $feeds[$tagname]->local->interval = $latest_meta->interval;      
             }
         }
-        
+
+        // If feeds list is empty or no remote feeds are reachable, periodically retry
+        // This recovers from an outage that occurred during or before script startup
+        $no_remote_feeds = true;
+        foreach ($feeds as $tagname=>$f) {
+            if ($feeds[$tagname]->remote->exists) { $no_remote_feeds = false; break; }
+        }
+        if ($no_remote_feeds && (time() - $last_remote_reload) >= $remote_reload_interval) {
+            print "- No remote feeds reachable, retrying feed list\n";
+            $new_feeds = $sync->get_feed_list($userid);
+            if (is_array($new_feeds) && !(isset($new_feeds['success']) && $new_feeds['success']==false)) {
+                $feeds = $new_feeds;
+                $remote_id_map = array();
+                foreach ($feeds as $tagname=>$f) {
+                    if ($feeds[$tagname]->remote->exists) {
+                        $remote_id_map[$feeds[$tagname]->remote->id] = $tagname;
+                    }
+                }
+                print "- Feed list reloaded: ".count($feeds)." feeds\n";
+            }
+            $last_remote_reload = time();
+        }
+
         continue;
     } else {
         print date('m/d/Y h:i:s a', time())."\n";
