@@ -317,8 +317,7 @@ class Sync
         if ($curl_response === false) {
             $error_code = curl_errno($curl);
             $error_msg = curl_error($curl);
-            curl_close($curl);
-    
+
             if ($error_code == CURLE_OPERATION_TIMEOUTED) {
                 return array("success"=>false, "message"=>"timeout error");
             } else {
@@ -327,8 +326,7 @@ class Sync
         }
 
         $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
-    
+
         if ($http_code >= 400) {
             return array("success"=>false, "message"=>"HTTP error: $http_code");       
         }
