@@ -1,5 +1,7 @@
 <?php global $path, $settings, $route; ?>
-<script src="<?php echo $path; ?>Lib/vue.min.js"></script>
+<?php
+    load_js("Lib/js/vue.global.prod-3.5.22.min.js");
+?>
 
 <h2>Emoncms Sync: <span id="page"></span></h2>
 
@@ -174,41 +176,42 @@
     var feeds_to_download = [];
     var feed_list_refresh_interval = false;
 
-    var app = new Vue({
-        el: '#app',
-        data: {
-            upload_interval: 300,
-        
-            // Authentication
-            auth_with_apikey: false,
-            remote_host: "https://emoncms.org",
-            remote_username: "",
-            remote_password: "",
-            remote_apikey: "",
-            show_login: false,
+    var app = Vue.createApp({
+        data() {
+            return {
+                upload_interval: 300,
 
-            view: 'feeds',
-            feeds: {},
-            feeds_by_tag: {},
-            selected: {},
-            expandedTags: {},
-            next_update_seconds: 0,
-            alert: "Connecting to remote emoncms server...",
+                // Authentication
+                auth_with_apikey: false,
+                remote_host: "https://emoncms.org",
+                remote_username: "",
+                remote_password: "",
+                remote_apikey: "",
+                show_login: false,
 
-            dashboard_log: "",
-            input_log: "",
+                view: 'feeds',
+                feeds: {},
+                feeds_by_tag: {},
+                selected: {},
+                expandedTags: {},
+                next_update_seconds: 0,
+                alert: "Connecting to remote emoncms server...",
 
-            service_running: false,
-            last_upload_time: "",
-            last_upload_time_desc: "",
-            last_upload_length: "",
+                dashboard_log: "",
+                input_log: "",
 
-            show_upload_selected: false,
-            show_stop_upload_selected: false,
+                service_running: false,
+                last_upload_time: "",
+                last_upload_time_desc: "",
+                last_upload_length: "",
 
-            available_to_download_count: 0,
+                show_upload_selected: false,
+                show_stop_upload_selected: false,
 
-            upload_size: 1000000
+                available_to_download_count: 0,
+
+                upload_size: 1000000
+            };
         },
         methods: {
             toggleTag(tag) {
@@ -511,11 +514,8 @@
                     }
                 });
             }
-        },
-        filters: {
-           
         }
-    });
+    }).mount('#app');
 
     function process_feed_list(result) {
 
