@@ -86,6 +86,29 @@ function sync_controller()
         $route->format = "json";
         return $sync->get_feed_list($session["userid"]);
     }
+
+    // Lightweight per-feed sync status for the feed list page.
+    // Served entirely from local state (Redis cache written by sync_upload.php,
+    // falling back to upload flags in MySQL) - no remote server calls.
+    if ($route->action == "feed-status") {
+        $route->format = "json";
+
+        $cached = $redis ? $redis->get("emoncms_sync:feed_status:".$session["userid"]) : false;
+        if ($cached) {
+            $status = json_decode($cached, true);
+            if (is_array($status)) return $status;
+        }
+
+        // Fallback: background process has not written a cache yet.
+        // Return upload-enabled feeds with an unknown sync position so the
+        // feed list can at least indicate which feeds are set to upload.
+        $upload_flags = $sync->get_upload_flags($session["userid"]);
+        $status = array();
+        foreach ($upload_flags as $local_id=>$upload) {
+            $status[(int) $local_id] = array("upload"=>(int) $upload, "status"=>"unknown");
+        }
+        return $status;
+    }
     
     // ---------------------------------------------------------------------------------------------------
     // Download feed

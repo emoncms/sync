@@ -21,6 +21,43 @@ $input = new Input($mysqli,$redis, $feed);
 include "Modules/sync/sync_model.php";
 $sync = new Sync($mysqli,$feed);
 
+// Cache per-feed sync status to Redis so the feed list page can display it
+// without making any remote calls. Keyed by local feed id, TTL'd so it
+// expires if this background process stops. See sync_controller.php "feed-status".
+function sync_write_feed_status($redis,$feeds,$userid) {
+    if (!$redis) return;
+    $status = array();
+    foreach ($feeds as $tagname=>$f) {
+        if (!isset($f->local) || empty($f->local->exists) || !isset($f->local->id)) continue;
+        $local = $f->local;
+        $remote = $f->remote;
+        $upload = isset($f->upload) ? (int) $f->upload : 0;
+        $npoints_local = is_numeric($local->npoints) ? (int) $local->npoints : 0;
+        $remote_exists = isset($remote->exists) && $remote->exists;
+        $npoints_remote = ($remote_exists && is_numeric($remote->npoints)) ? (int) $remote->npoints : 0;
+
+        if (!$upload) {
+            $s = "upload_disabled";
+        } else if (!$remote_exists) {
+            $s = "no_remote";
+        } else if ($npoints_local > $npoints_remote) {
+            $s = "behind";
+        } else {
+            $s = "synced";
+        }
+
+        $status[(int) $local->id] = array(
+            "upload" => $upload,
+            "status" => $s,
+            "npoints_local" => $npoints_local,
+            "npoints_remote" => $npoints_remote,
+            "last_sync" => time()
+        );
+    }
+    $redis->set("emoncms_sync:feed_status:$userid", json_encode($status));
+    $redis->expire("emoncms_sync:feed_status:$userid", 600);
+}
+
 $userid = 1;
 
 $r = $sync->remote_load($userid);
@@ -195,10 +232,12 @@ while(true) {
                 // print "- ".$feeds[$tagname]->local->id." ".$feeds[$tagname]->local->npoints." ".$latest_meta->npoints."\n";
                 $feeds[$tagname]->local->npoints = $latest_meta->npoints;
                 $feeds[$tagname]->local->start_time = $latest_meta->start_time;
-                $feeds[$tagname]->local->interval = $latest_meta->interval;      
+                $feeds[$tagname]->local->interval = $latest_meta->interval;
             }
         }
-        
+
+        sync_write_feed_status($redis,$feeds,$userid);
+
         continue;
     } else {
         print date('m/d/Y h:i:s a', time())."\n";
@@ -241,6 +280,8 @@ while(true) {
         $feeds[$tagname]->remote->start_time = $updated_feed->start_time;
         $feeds[$tagname]->remote->interval = $updated_feed->interval;
     }
+
+    sync_write_feed_status($redis,$feeds,$userid);
 
 
     // More than upload interval x 6

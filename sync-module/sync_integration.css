@@ -1,0 +1,24 @@
+/*
+ * Sync upload status badge, shown in the feed list "sync" column.
+ * Loaded by Modules/feed/Views/feed_list.php only when the sync module
+ * is installed. The column track itself is defined in feed_view.css.
+ */
+.sync-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 3px;
+    white-space: nowrap;
+    background: #e0e0e0;
+    color: #333;
+}
+
+/* Local and remote in sync */
+.sync-synced    { background: #dff0d8; color: #3c763d; }
+/* Local ahead of remote: data waiting to upload */
+.sync-behind    { background: #fcf8e3; color: #8a6d3b; }
+/* Remote feed not created yet */
+.sync-no_remote { background: #d9edf7; color: #31708f; }
+/* Upload enabled but background process has no position yet */
+.sync-unknown   { background: #eee; color: #777; }
