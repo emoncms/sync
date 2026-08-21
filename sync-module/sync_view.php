@@ -664,7 +664,8 @@
                         app.view = "dashboards";
                     }
 
-                    if (result.username == undefined && result.apikey_write != "") {
+                    // Linked by apikey: no username is stored, show the linked state not the login form
+                    if (!result.username && result.apikey_write != "") {
                         app.show_login = false;
                     } else {
                         app.show_login = true;

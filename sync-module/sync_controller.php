@@ -174,7 +174,7 @@ function sync_controller()
             // 1. Load process list
             $process_list = json_decode(file_get_contents($remote->host."/input/getallprocesses.json?apikey=".$remote->apikey_write));
             // 2. Load remote feed list and map to feed id for easier reference
-            $tmp = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read));
+            $tmp = json_decode(file_get_contents($remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_write));
             $remotefeeds = array(); foreach ($tmp as $f) $remotefeeds[$f->id] = $f;
             // 3. Load local feed list
             $localfeeds = json_decode(json_encode($feed->get_user_feeds_with_meta($session['userid'])));

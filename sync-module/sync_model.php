@@ -153,14 +153,41 @@ class Sync
         $userid = (int) $userid;
         if (!$this->validate_host($host)) return array('success'=>false, 'message'=>_('Invalid or disallowed host URL'));
 
-        // Fetch username from remote server
-        $result = json_decode(file_get_contents($host."/user/get.json?apikey=$write_apikey"));
-        if (!$result) {
-            return array("success"=>false, "message"=>"No response from remote server");
+        $apikey_url = urlencode($write_apikey);
+
+        // Ask the remote server what this apikey can do. user/session.json returns the userid and
+        // whether the key grants write access, it does not expose the remote username, email
+        // address or the account's other apikey.
+        $result = $this->request("GET",$host."/user/session.json?apikey=$apikey_url",false);
+        if (!$result['success']) {
+            // A 401 is the remote server rejecting the key itself
+            if (strpos($result['message'],"401")!==false) {
+                return array("success"=>false, "message"=>"Authentication failure, apikey incorrect");
+            }
+            return array("success"=>false, "message"=>"No response from remote server: ".$result['message']);
+        }
+        $remote_session = json_decode($result['result']);
+
+        if (isset($remote_session->userid) && $remote_session->userid) {
+            if (!isset($remote_session->type) || $remote_session->type!="write") {
+                return array("success"=>false, "message"=>"That is a read only apikey, sync requires the read & write apikey");
+            }
+            // The write apikey is used for every request, there is no need to hold the read apikey,
+            // and the remote username is not used by sync
+            return $this->remote_save_username_and_keys($userid,$host,"",$write_apikey,$write_apikey,1);
         }
 
-        if (isset($result->id) && $result->id) {
-            return $this->remote_save_username_and_keys($userid,$host,$result->username,$result->apikey_read,$result->apikey_write,1);
+        // Remote servers from before user/session.json respond 200 false to it. Fall back to
+        // user/get.json, which on those servers still accepts an apikey and requires a write key.
+        // This fallback can be removed once servers have had time to update.
+        $result = $this->request("GET",$host."/user/get.json?apikey=$apikey_url",false);
+        if (!$result['success']) {
+            return array("success"=>false, "message"=>"Authentication failure, apikey incorrect");
+        }
+        $remote_user = json_decode($result['result']);
+
+        if (isset($remote_user->id) && $remote_user->id) {
+            return $this->remote_save_username_and_keys($userid,$host,$remote_user->username,$remote_user->apikey_read,$remote_user->apikey_write,1);
         } else {
             return array("success"=>false, "message"=>"Authentication failure, apikey incorrect");
         }
@@ -207,7 +234,8 @@ class Sync
         }
         // 3. Load remote feeds
         
-        $result = $this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_read,false);
+        // The write apikey is used throughout, apikey_read is empty when linked by apikey
+        $result = $this->request("GET",$remote->host."/feed/listwithmeta.json?apikey=".$remote->apikey_write,false);
         if (!$result['success']) return array("success"=>false, "message"=>"No response from remote server");
 
         $remotefeeds = json_decode($result['result']);
