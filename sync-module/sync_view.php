@@ -31,16 +31,16 @@
         <p>Use write apikey for authentication: <input type="checkbox" v-model="auth_with_apikey" style="margin-top:-1px"></p>
 
 
-        <div class="input-prepend input-append">
-            <span class="add-on">Host</span><input v-model="remote_host" type="text" style="width:150px">
-            <span v-if="!auth_with_apikey" class="add-on">Username</span><input v-if="!auth_with_apikey" v-model="remote_username" type="text" style="width:150px">
-            <span v-if="!auth_with_apikey" class="add-on">Password</span><input v-if="!auth_with_apikey" v-model="remote_password" type="text" style="width:150px">
-            <span v-if="auth_with_apikey"class="add-on">Apikey</span><input v-if="auth_with_apikey" v-model="remote_apikey" type="text" style="width:250px">
-            <button @click="remote_save" class="btn">Connect</button>
+        <div class="input-group">
+            <span class="input-group-text">Host</span><input v-model="remote_host" type="text" style="width:150px">
+            <span v-if="!auth_with_apikey" class="input-group-text">Username</span><input v-if="!auth_with_apikey" v-model="remote_username" type="text" style="width:150px">
+            <span v-if="!auth_with_apikey" class="input-group-text">Password</span><input v-if="!auth_with_apikey" v-model="remote_password" type="text" style="width:150px">
+            <span v-if="auth_with_apikey"class="input-group-text">Apikey</span><input v-if="auth_with_apikey" v-model="remote_apikey" type="text" style="width:250px">
+            <button @click="remote_save" class="btn btn-default">Connect</button>
         </div>
         
-        <div class="input-prepend input-append" style="margin-left:20px"> 
-            <span class="add-on">Sync interval</span>
+        <div class="input-group" style="margin-left:20px"> 
+            <span class="input-group-text">Sync interval</span>
             <select style="width:100px" v-model="upload_interval" @change="save_upload_interval">
                 <option value=300>5 mins</option>
                 <option value=600>10 mins</option>
@@ -52,8 +52,8 @@
         </div>
 
         <!-- Upload size 1MB, 100kB -->
-        <div class="input-prepend input-append" style="margin-left:20px">
-            <span class="add-on">Upload size</span>
+        <div class="input-group" style="margin-left:20px">
+            <span class="input-group-text">Upload size</span>
             <select style="width:100px" v-model="upload_size" @change="save_upload_size">
                 <option value=100000>100kB</option>
                 <option value=1000000>1MB</option>
@@ -65,7 +65,7 @@
         <div class="alert alert-info" v-if="alert">{{ alert }}</div>
 
         <!-- Service status -->
-        <div class="alert alert-error" v-if="!service_running">
+        <div class="alert alert-danger" v-if="!service_running">
             <!-- red circle with css -->
             <div style="width: 10px; height: 10px; background-color: #aa0000; border-radius: 50%; display: inline-block;"></div>
             <b>emoncms_sync</b> service is not running, please start the service to enable feed syncing. <span v-if="last_upload_time_desc">Last upload {{ last_upload_time_desc }} ({{ size_format(last_upload_length) }})</span>
@@ -78,14 +78,14 @@
 
         <div v-if="view=='feeds'">
             <!-- select all -->
-            <button class="btn btn-small" @click="select_all"><i class="icon-ok-circle"></i> Select all</button>
-            <button class="btn btn-small" @click="unselect_all"><i class="icon-remove-circle"></i> Unselect all</button>
+            <button class="btn btn-default btn-sm" @click="select_all"><i class="icon-ok-circle"></i> Select all</button>
+            <button class="btn btn-default btn-sm" @click="unselect_all"><i class="icon-remove-circle"></i> Unselect all</button>
             <!-- upload selected -->
-            <button class="btn btn-small" v-if="show_upload_selected" @click="upload_selected"><i class="icon-upload"></i> Upload selected</button>
+            <button class="btn btn-default btn-sm" v-if="show_upload_selected" @click="upload_selected"><i class="icon-upload"></i> Upload selected</button>
             <!-- stop upload -->
-            <button class="btn btn-small" v-if="show_stop_upload_selected" @click="stop_upload_selected">Stop upload</button>
+            <button class="btn btn-default btn-sm" v-if="show_stop_upload_selected" @click="stop_upload_selected">Stop upload</button>
             <!-- download all that are available to download -->
-            <button class="btn btn-small" @click="download_all" v-if="available_to_download_count"><i class="icon-download"></i> Download all ({{ available_to_download_count }})</button>
+            <button class="btn btn-default btn-sm" @click="download_all" v-if="available_to_download_count"><i class="icon-download"></i> Download all ({{ available_to_download_count }})</button>
         </div><br>
 
         <table class="table" v-if="view=='feeds'">
@@ -135,7 +135,7 @@
                     </td>
                     
                     <td>
-                        <button class="btn btn-small" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
+                        <button class="btn btn-default btn-sm" @click="download_feed(tagname)" v-if="feed.button=='Download'"><i class='icon-arrow-left'></i> Download</button>
                     </td>
                 </tr>
                 <!-- spacing -->
@@ -145,16 +145,16 @@
             </template>
         </table>
 
-        <button v-if="view=='feeds'" class="btn btn-small" @click="refresh_feed_size"><i class="icon-refresh" ></i>&nbsp;<?php echo _('Refresh feed size'); ?></button>
+        <button v-if="view=='feeds'" class="btn btn-default btn-sm" @click="refresh_feed_size"><i class="icon-refresh" ></i>&nbsp;<?php echo _('Refresh feed size'); ?></button>
 
 
         <div v-if="view=='inputs'">
-            <p>Download remote emoncms inputs <button @click="download_inputs" class="btn">Download</button></p>
+            <p>Download remote emoncms inputs <button @click="download_inputs" class="btn btn-default">Download</button></p>
             <pre v-if="input_log">{{ input_log }}</pre>
         </div>
 
         <div v-if="view=='dashboards'">
-            <p>Download remote emoncms dashboards <button @click="download_dashboards" class="btn">Download</button></p>
+            <p>Download remote emoncms dashboards <button @click="download_dashboards" class="btn btn-default">Download</button></p>
             <pre v-if="dashboard_log">{{ dashboard_log }}</pre>
         </div>
     </div>
