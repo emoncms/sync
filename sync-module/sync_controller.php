@@ -22,7 +22,7 @@ function sync_controller()
     
     // ----------------------------------------------------
     
-    if ($route->action == "view") {
+    if ($route->action == "view" || $route->action == "") {
         $route->format = "html";
         return view("Modules/sync/sync_view.php",array('version'=>1));
     }
