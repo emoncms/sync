@@ -32,16 +32,16 @@
 
 
         <div class="input-group">
-            <span class="input-group-text">Host</span><input v-model="remote_host" type="text" style="width:150px">
-            <span v-if="!auth_with_apikey" class="input-group-text">Username</span><input v-if="!auth_with_apikey" v-model="remote_username" type="text" style="width:150px">
-            <span v-if="!auth_with_apikey" class="input-group-text">Password</span><input v-if="!auth_with_apikey" v-model="remote_password" type="text" style="width:150px">
-            <span v-if="auth_with_apikey"class="input-group-text">Apikey</span><input v-if="auth_with_apikey" v-model="remote_apikey" type="text" style="width:250px">
+            <span class="input-group-text">Host</span><input v-model="remote_host" type="text" class="form-control input-165">
+            <span v-if="!auth_with_apikey" class="input-group-text">Username</span><input v-if="!auth_with_apikey" v-model="remote_username" type="text" class="form-control input-165">
+            <span v-if="!auth_with_apikey" class="input-group-text">Password</span><input v-if="!auth_with_apikey" v-model="remote_password" type="text" class="form-control input-165">
+            <span v-if="auth_with_apikey"class="input-group-text">Apikey</span><input v-if="auth_with_apikey" v-model="remote_apikey" type="text" class="form-control" style="width:264px">
             <button @click="remote_save" class="btn btn-default">Connect</button>
         </div>
         
         <div class="input-group" style="margin-left:20px"> 
             <span class="input-group-text">Sync interval</span>
-            <select style="width:100px" v-model="upload_interval" @change="save_upload_interval">
+            <select class="form-select" style="width:100px" v-model="upload_interval" @change="save_upload_interval">
                 <option value=300>5 mins</option>
                 <option value=600>10 mins</option>
                 <option value=900>15 mins</option>
@@ -54,7 +54,7 @@
         <!-- Upload size 1MB, 100kB -->
         <div class="input-group" style="margin-left:20px">
             <span class="input-group-text">Upload size</span>
-            <select style="width:100px" v-model="upload_size" @change="save_upload_size">
+            <select class="form-select" style="width:100px" v-model="upload_size" @change="save_upload_size">
                 <option value=100000>100kB</option>
                 <option value=1000000>1MB</option>
             </select>
