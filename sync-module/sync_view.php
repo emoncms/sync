@@ -3,7 +3,9 @@
     load_js("Lib/js/vue.global.prod-3.5.22.min.js");
 ?>
 
-<h2>Emoncms Sync: <span id="page"></span></h2>
+<div class="page-header">
+    <h3>Emoncms Sync: <span id="page"></span></h3>
+</div>
 
 <p>The module can be used to download or upload data to or from a remote emoncms installation.</p>
 <p>Start by entering the remote emoncms installation location in the <i>host</i> field (e.g https://emoncms.org). Then enter the <i>username</i> and <i>password</i> of the account you wish to link to.</p>
