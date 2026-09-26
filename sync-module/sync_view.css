@@ -5,14 +5,23 @@ body { background-color: var(--bg-body); }
 .sync-page { padding-bottom: 2rem; }
 .page-lead { margin: -4px 0 14px; color: var(--text-secondary); }
 
+.sync-page .panel { margin-bottom: 1rem; }
+.sync-tabs { margin-bottom: 1rem; }
+.sync-note { color: var(--text-secondary); max-width: 760px; }
+
 /* Remote server and upload service panels */
-.sync-page .panel-row .row-key { flex-basis: 120px; }
+.sync-page .panel-header { min-height: 44px; }
+.sync-page .panel-row .row-key { flex-basis: 140px; }
+.sync-page .panel-body.sync-note { padding: 10px 1rem; border-top: 1px solid var(--border); font-size: var(--font-sm); }
 .sync-page .panel-row .form-control,
 .sync-page .panel-row .form-select { margin: 0; }
 .sync-apikey { font-family: var(--font-mono); font-size: var(--font-sm); }
 .sync-radios { display: flex; flex-wrap: wrap; gap: 4px 1rem; }
 .sync-radios label { display: flex; align-items: center; gap: 6px; margin: 0; }
 .sync-radios input { margin: 0; }
+.sync-buttons { display: flex; gap: 6px; }
+.sync-buttons .btn { margin: 0; }
+
 
 /* Toolbar, sticky under the top menu as on feeds */
 .sync-controls-sentinel { height: 0; visibility: hidden; }
@@ -50,9 +59,9 @@ body { background-color: var(--bg-body); }
 .sync-controls-right .form-control { margin: 0; }
 .sync-next { font-size: var(--font-sm); color: var(--text-secondary); }
 
-/* Feed list, scrolls sideways when narrow: select, name, location, engine, size, status, upload, download */
+/* Feed list, scrolls sideways when narrow: select, name, engine, size, status, upload switch or download button */
 .sync-list {
-    grid-template-columns: 40px minmax(160px, max-content) max-content max-content max-content minmax(200px, 1fr) max-content max-content;
+    grid-template-columns: 40px minmax(160px, max-content) max-content max-content minmax(200px, 1fr) max-content;
     margin-bottom: 10px;
     overflow-x: auto;
 }
@@ -74,6 +83,7 @@ body { background-color: var(--bg-body); }
 .sync-list .group-list-cell.sync-status { white-space: normal; color: var(--text-secondary); }
 
 /* Row state: status stripe and status text colour */
+.sync-list .sync-status a { margin-left: 4px; }
 .sync-list .sync-same   { --status-color: var(--bs-success-text-emphasis); }
 .sync-list .sync-behind { --status-color: var(--bs-warning-text-emphasis); }
 .sync-list .sync-ahead  { --status-color: var(--bs-info-text-emphasis); }

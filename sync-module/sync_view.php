@@ -1,19 +1,25 @@
-<?php global $path, $settings; ?>
+<?php global $path, $settings, $route; ?>
 <?php
     load_js("Lib/js/vue.global.prod-3.5.22.min.js");
     load_css("Modules/feed/Views/feed_view.css");
     load_css("Modules/sync/sync_view.css");
+    $tab = ($route->subaction == "download") ? "download" : "upload";
 ?>
 
 <div class="sync-page">
 <div class="page-header">
     <h3>Sync</h3>
 </div>
-<p class="page-lead">Upload local feeds to a remote emoncms server, or download remote feeds to this one.</p>
+<p class="page-lead">Upload feeds from this device to a remote emoncms server, or download feeds from it.</p>
 
 <?php if ($settings["redis"]["enabled"]) { ?>
 
 <div id="app" v-cloak>
+
+    <ul class="nav nav-tabs sync-tabs">
+        <li class="nav-item"><a class="nav-link" :class="{active: tab == 'upload'}" href="<?php echo $path; ?>sync" @click.prevent="set_tab('upload')">Upload</a></li>
+        <li class="nav-item"><a class="nav-link" :class="{active: tab == 'download'}" href="<?php echo $path; ?>sync/view/download" @click.prevent="set_tab('download')">Download</a></li>
+    </ul>
 
     <div class="row g-3 mb-3">
         <div class="col-lg-6">
@@ -23,39 +29,59 @@
                     <span class="panel-name">Remote server</span>
                     <span class="panel-badge" v-if="connected">Linked</span>
                 </div>
-                <div class="panel-row">
-                    <div class="row-key">Sign in with</div>
-                    <div class="row-value sync-radios">
-                        <label><input type="radio" :value="0" v-model="auth_with_apikey"> Username and password</label>
-                        <label><input type="radio" :value="1" v-model="auth_with_apikey"> Write apikey</label>
-                    </div>
-                </div>
-                <div class="panel-row">
-                    <div class="row-key">Host</div>
-                    <div class="row-value"><input v-model="remote_host" type="text" class="form-control input-285" placeholder="https://emoncms.org"></div>
-                </div>
-                <template v-if="!auth_with_apikey">
+                <template v-if="connected && !edit_remote">
                     <div class="panel-row">
-                        <div class="row-key">Username</div>
-                        <div class="row-value"><input v-model="remote_username" type="text" class="form-control input-285"></div>
+                        <div class="row-key">Host</div>
+                        <div class="row-value">{{ remote_host }}</div>
+                        <button class="btn btn-default btn-sm" @click="edit_remote = true">Change</button>
                     </div>
                     <div class="panel-row">
-                        <div class="row-key">Password</div>
-                        <div class="row-value"><input v-model="remote_password" type="password" class="form-control input-285" @keyup.enter="remote_save"></div>
+                        <div class="row-key">Signed in</div>
+                        <div class="row-value">{{ linked_by }}</div>
+                    </div>
+                    <div class="panel-row">
+                        <div class="row-key">Remote feeds</div>
+                        <div class="row-value">{{ summary.remote_count }} <span class="text-muted">({{ size_format(summary.remote_size) }})</span></div>
                     </div>
                 </template>
-                <div class="panel-row" v-else>
-                    <div class="row-key">Write apikey</div>
-                    <div class="row-value"><input v-model="remote_apikey" type="text" class="form-control input-285 sync-apikey" @keyup.enter="remote_save"></div>
-                </div>
-                <div class="panel-row">
-                    <div class="row-key"></div>
-                    <div class="row-value"><button @click="remote_save" class="btn btn-primary btn-sm">Connect</button></div>
-                </div>
+                <template v-else>
+                    <div class="panel-row">
+                        <div class="row-key">Sign in with</div>
+                        <div class="row-value sync-radios">
+                            <label><input type="radio" :value="0" v-model="auth_with_apikey"> Username and password</label>
+                            <label><input type="radio" :value="1" v-model="auth_with_apikey"> Write apikey</label>
+                        </div>
+                    </div>
+                    <div class="panel-row">
+                        <div class="row-key">Host</div>
+                        <div class="row-value"><input v-model="remote_host" type="text" class="form-control input-285" placeholder="https://emoncms.org"></div>
+                    </div>
+                    <template v-if="!auth_with_apikey">
+                        <div class="panel-row">
+                            <div class="row-key">Username</div>
+                            <div class="row-value"><input v-model="remote_username" type="text" class="form-control input-285"></div>
+                        </div>
+                        <div class="panel-row">
+                            <div class="row-key">Password</div>
+                            <div class="row-value"><input v-model="remote_password" type="password" class="form-control input-285" @keyup.enter="remote_save"></div>
+                        </div>
+                    </template>
+                    <div class="panel-row" v-else>
+                        <div class="row-key">Write apikey</div>
+                        <div class="row-value"><input v-model="remote_apikey" type="text" class="form-control input-285 sync-apikey" @keyup.enter="remote_save"></div>
+                    </div>
+                    <div class="panel-row">
+                        <div class="row-key"></div>
+                        <div class="row-value sync-buttons">
+                            <button @click="remote_save" class="btn btn-primary btn-sm">Connect</button>
+                            <button v-if="connected" @click="edit_remote = false" class="btn btn-default btn-sm">Cancel</button>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
 
-        <div class="col-lg-6">
+        <div class="col-lg-6" v-if="tab == 'upload'">
             <div class="panel h-100 mb-0">
                 <div class="panel-header panel-header-static">
                     <span class="panel-accent"></span>
@@ -70,6 +96,10 @@
                             <span class="row-note">Start the <code>emoncms_sync</code> service to upload feeds.</span>
                         </template>
                     </div>
+                </div>
+                <div class="panel-row">
+                    <div class="row-key">Uploading</div>
+                    <div class="row-value">{{ summary.upload_count }} of {{ summary.local_count }} feeds</div>
                 </div>
                 <div class="panel-row">
                     <div class="row-key">Last upload</div>
@@ -102,58 +132,91 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-lg-6" v-else>
+            <div class="panel h-100 mb-0">
+                <div class="panel-header panel-header-static">
+                    <span class="panel-accent"></span>
+                    <span class="panel-name">Download</span>
+                </div>
+                <div class="panel-row">
+                    <div class="row-key">Not on this device</div>
+                    <div class="row-value">{{ summary.missing_count }} feeds <span class="text-muted">({{ size_format(summary.missing_size) }})</span></div>
+                </div>
+                <div class="panel-row">
+                    <div class="row-key">Behind remote</div>
+                    <div class="row-value">{{ summary.behind_count }} feeds</div>
+                </div>
+                <div class="panel-row" v-if="summary.downloading_count">
+                    <div class="row-key">Downloading</div>
+                    <div class="row-value">{{ summary.downloading_count }} feeds</div>
+                </div>
+                <div class="panel-row">
+                    <div class="row-key"></div>
+                    <div class="row-value">
+                        <button class="btn btn-primary btn-sm" :disabled="!all_downloadable.length" @click="download_list(all_downloadable)"><i class="svg-icon-download"></i> Download all ({{ all_downloadable.length }})</button>
+                    </div>
+                </div>
+                <div class="panel-body sync-note">Restores or copies feed data from the remote server. Each download adds the data the local feed is missing. A feed that is not on this device is created with the same tag and name.</div>
+            </div>
+        </div>
     </div>
 
     <div class="alert alert-info" v-if="alert">{{ alert }}</div>
 
-    <template v-if="Object.keys(feeds_by_tag).length">
+    <template v-if="Object.keys(feeds).length">
     <div class="sync-controls-sentinel"></div>
     <div class="controls sync-controls">
         <button class="btn btn-default" :title="all_expanded ? 'Collapse' : 'Expand'" @click="expand_all"><i :class="all_expanded ? 'svg-icon-minimize-2' : 'svg-icon-expand'"></i></button>
-        <button class="btn btn-default" :title="all_selected ? 'Unselect all' : 'Select all'" @click="all_selected ? unselect_all() : select_all()">
-            <i :class="all_selected ? 'svg-icon-ban-circle' : 'svg-icon-check'"></i> <span>{{ selected_count }}</span>
+        <button class="btn btn-default" :title="all_selected ? 'Unselect all' : 'Select all'" @click="select_all(!all_selected)">
+            <i :class="all_selected ? 'svg-icon-ban-circle' : 'svg-icon-check'"></i> <span>{{ selected_list.length }}</span>
         </button>
-        <button class="btn btn-default" v-if="show_upload_selected" @click="upload_selected"><i class="svg-icon-upload"></i> Upload</button>
-        <button class="btn btn-default" v-if="show_stop_upload_selected" @click="stop_upload_selected">Stop upload</button>
-        <button class="btn btn-default" v-if="available_to_download_count" @click="download_all"><i class="svg-icon-download"></i> Download all ({{ available_to_download_count }})</button>
+        <template v-if="tab == 'upload'">
+            <button class="btn btn-default" v-if="selected_list.length" @click="set_upload_selected(true)"><i class="svg-icon-upload"></i> Upload</button>
+            <button class="btn btn-default" v-if="selected_list.length" @click="set_upload_selected(false)">Stop upload</button>
+        </template>
+        <template v-else>
+            <button class="btn btn-default" v-if="selected_downloadable.length" @click="download_list(selected_downloadable)"><i class="svg-icon-download"></i> Download selected ({{ selected_downloadable.length }})</button>
+        </template>
         <div class="sync-controls-right">
             <span class="sync-next">Next update {{ next_update_seconds }}s</span>
             <input type="text" class="form-control input-220" v-model="filter_text" placeholder="Filter feeds">
         </div>
     </div>
 
-    <div class="group-list sync-list">
+    <div class="group-list sync-list" :class="'sync-list-' + tab" v-if="Object.keys(view_tags).length">
         <div class="sync-list-head">
-            <div></div><div>Name</div><div>Location</div><div>Engine</div><div class="text-end">Size</div><div>Status</div><div class="text-center">Upload</div><div></div>
+            <div></div><div>Name</div><div>Engine</div><div class="text-end">Size</div><div>Status</div>
+            <div class="text-center" v-if="tab == 'upload'">Upload</div><div v-else></div>
         </div>
-        <template v-for="(feeds, tag) in filtered_tags" :key="tag">
+        <template v-for="(feeds, tag) in view_tags" :key="tag">
             <div class="group-list-group">
                 <div class="group-list-header" :class="{'collapsed': !expandedTags[tag]}" @click="toggleTag(tag)">
                     <div class="group-list-cell text-center" data-col="select"><span class="group-list-chevron"></span></div>
                     <div class="group-list-cell group-list-name">{{ tag }}</div>
                     <div class="group-list-cell"></div>
-                    <div class="group-list-cell"></div>
                     <div class="group-list-cell text-end">{{ size_format(tag_size(feeds)) }}</div>
-                    <div class="group-list-cell"></div>
                     <div class="group-list-cell"></div>
                     <div class="group-list-cell"></div>
                 </div>
                 <div class="group-list-rows" :class="{'is-expanded': expandedTags[tag]}">
                     <div class="group-list-rows-inner">
-                        <div v-for="(feed, tagname) in feeds" :key="tagname" class="group-list-row" :class="['sync-' + feed.state, {'selected': selected[tagname]}]" @click="toggle_select(tagname)">
-                            <div class="group-list-cell text-center" @click.stop><input type="checkbox" v-model="selected[tagname]" @change="select_change"></div>
-                            <div class="group-list-cell" :title="`Start time: ${toDate(feed.local.start_time)}\nInterval: ${interval_format(feed.local.interval)}s`">{{ feed.local.name }}</div>
-                            <div class="group-list-cell text-muted">{{ feed.location }}</div>
-                            <div class="group-list-cell" v-html="engine_badge(feed.local.id ? feed.local : feed.remote)"></div>
-                            <div class="group-list-cell text-end text-muted">{{ size_format(feed.button == 'Download' ? feed.remote.size : feed.local.size) }}</div>
-                            <div class="group-list-cell sync-status">{{ feed.status }}</div>
-                            <div class="group-list-cell text-center" @click.stop>
-                                <div class="form-check form-switch" v-if="feed.local.exists" :title="feed.upload ? 'Uploading, click to stop' : 'Upload to remote'">
-                                    <input class="form-check-input" type="checkbox" role="switch" :checked="feed.upload" :disabled="feed.button == 'Download'" @change="toggle_upload(tagname)">
+                        <div v-for="(feed, tagname) in feeds" :key="tagname" class="group-list-row" :class="['sync-' + feed.state, {'selected': selected[tagname]}]" @click="selected[tagname] = !selected[tagname]">
+                            <div class="group-list-cell text-center" @click.stop><input type="checkbox" v-model="selected[tagname]"></div>
+                            <div class="group-list-cell" :title="`Start time: ${toDate(side(feed).start_time)}\nInterval: ${interval_format(side(feed).interval)}s`">{{ side(feed).name }}</div>
+                            <div class="group-list-cell" v-html="engine_badge(side(feed))"></div>
+                            <div class="group-list-cell text-end text-muted">{{ size_format(side(feed).size) }}</div>
+                            <div class="group-list-cell sync-status">
+                                {{ status(feed, tagname) }}
+                                <a v-if="tab == 'upload' && feed.state == 'behind'" href="#" @click.prevent.stop="show_download(feed)">Download</a>
+                            </div>
+                            <div class="group-list-cell text-center" @click.stop v-if="tab == 'upload'">
+                                <div class="form-check form-switch" :title="feed.upload ? 'Uploading, click to stop' : 'Upload to remote'">
+                                    <input class="form-check-input" type="checkbox" role="switch" :checked="feed.upload" :disabled="feed.state == 'behind'" @change="set_upload(tagname, !feed.upload)">
                                 </div>
                             </div>
-                            <div class="group-list-cell text-end" @click.stop>
-                                <button class="btn btn-default btn-sm" @click="download_feed(tagname)" v-if="feed.button == 'Download'"><i class="svg-icon-download"></i> Download</button>
+                            <div class="group-list-cell text-end" @click.stop v-else>
+                                <button class="btn btn-default btn-sm" @click="download_feed(tagname)" v-if="can_download(feed) && !downloading[tagname]"><i class="svg-icon-download"></i> Download</button>
                             </div>
                         </div>
                     </div>
@@ -162,8 +225,12 @@
             <div class="sync-list-gap"></div>
         </template>
     </div>
+    <p class="sync-note" v-else-if="!filter_text">
+        <span v-if="tab == 'upload'">There are no feeds on this device.</span>
+        <span v-else>There are no feeds on the remote server.</span>
+    </p>
 
-    <button class="btn btn-default btn-sm" @click="refresh_feed_size"><i class="svg-icon-refresh-cw"></i> <?php echo _('Refresh feed size'); ?></button>
+    <button class="btn btn-default btn-sm" v-if="tab == 'upload'" @click="refresh_feed_size"><i class="svg-icon-refresh-cw"></i> <?php echo _('Refresh feed size'); ?></button>
     </template>
 </div>
 
@@ -177,14 +244,12 @@
 <script>
     var redis_enabled = <?php echo $settings["redis"]["enabled"] ? 1 : 0; ?>;
     var path = "<?php echo $path; ?>";
-
-    var feeds_to_upload = [];
-    var feeds_to_download = [];
     var feed_list_refresh_interval = false;
 
     var app = Vue.createApp({
         data() {
             return {
+                tab: "<?php echo $tab; ?>",
                 upload_interval: 300,
 
                 // Authentication
@@ -194,10 +259,11 @@
                 remote_password: "",
                 remote_apikey: "",
                 connected: false,
+                edit_remote: false,
 
                 feeds: {},
-                feeds_by_tag: {},
                 selected: {},
+                downloading: {},
                 expandedTags: {},
                 filter_text: "",
                 next_update_seconds: 0,
@@ -208,57 +274,110 @@
                 last_upload_time_desc: "",
                 last_upload_length: "",
 
-                show_upload_selected: false,
-                show_stop_upload_selected: false,
-
-                available_to_download_count: 0,
-
                 upload_size: 1000000
             };
         },
         computed: {
-            filtered_tags() {
+            linked_by() {
+                if (this.auth_with_apikey) return "With write apikey";
+                return "As " + this.remote_username;
+            },
+            // Feeds of the current tab, grouped by tag and filtered
+            view_tags() {
                 var f = this.filter_text.trim().toLowerCase();
-                if (!f) return this.feeds_by_tag;
                 var out = {};
-                for (var tag in this.feeds_by_tag) {
-                    for (var tagname in this.feeds_by_tag[tag]) {
-                        if (tagname.toLowerCase().indexOf(f) == -1) continue;
-                        if (out[tag] == undefined) out[tag] = {};
-                        out[tag][tagname] = this.feeds_by_tag[tag][tagname];
-                    }
+                for (var tagname in this.feeds) {
+                    var feed = this.feeds[tagname];
+                    if (!this.side(feed).exists) continue;
+                    if (f && tagname.toLowerCase().indexOf(f) == -1) continue;
+                    var tag = this.side(feed).tag;
+                    if (out[tag] == undefined) out[tag] = {};
+                    out[tag][tagname] = feed;
                 }
                 return out;
             },
-            selected_count() {
-                return Object.values(this.selected).filter(Boolean).length;
+            view_list() {
+                var list = [];
+                for (var tag in this.view_tags) list = list.concat(Object.keys(this.view_tags[tag]));
+                return list;
+            },
+            selected_list() {
+                return this.view_list.filter(tagname => this.selected[tagname]);
             },
             all_selected() {
-                var n = Object.keys(this.feeds).length;
-                return n > 0 && this.selected_count == n;
+                return this.view_list.length > 0 && this.selected_list.length == this.view_list.length;
             },
             all_expanded() {
-                return Object.values(this.expandedTags).every(Boolean);
+                return Object.keys(this.view_tags).every(tag => this.expandedTags[tag]);
+            },
+            // Unfiltered, for the Download panel
+            all_downloadable() {
+                return Object.keys(this.feeds).filter(tagname => this.can_download(this.feeds[tagname]) && !this.downloading[tagname]);
+            },
+            selected_downloadable() {
+                return this.selected_list.filter(tagname => this.can_download(this.feeds[tagname]) && !this.downloading[tagname]);
+            },
+            // Counts for the panels
+            summary() {
+                var s = { remote_count: 0, remote_size: 0, local_count: 0, upload_count: 0, missing_count: 0, missing_size: 0, behind_count: 0, downloading_count: 0 };
+                for (var tagname in this.feeds) {
+                    var f = this.feeds[tagname];
+                    if (f.remote.exists) { s.remote_count++; s.remote_size += 1 * f.remote.size || 0; }
+                    if (f.local.exists) { s.local_count++; if (f.upload * 1) s.upload_count++; }
+                    if (f.state == "remote") { s.missing_count++; s.missing_size += 1 * f.remote.size || 0; }
+                    if (f.state == "behind") s.behind_count++;
+                    if (this.downloading[tagname]) s.downloading_count++;
+                }
+                return s;
             }
         },
         methods: {
+            set_tab(tab) {
+                this.tab = tab;
+                for (var tagname in this.selected) this.selected[tagname] = false;
+                history.replaceState(null, "", path + (tab == "download" ? "sync/view/download" : "sync"));
+            },
+            // Local side on the upload tab, remote side on the download tab
+            side(feed) {
+                return this.tab == "upload" ? feed.local : feed.remote;
+            },
+            can_download(feed) {
+                return feed.state == "remote" || feed.state == "behind";
+            },
+            status(feed, tagname) {
+                if (this.tab == "upload") {
+                    if (feed.state == "local") return "Not on remote yet";
+                    if (feed.state == "same") return "Up to date";
+                    if (feed.state == "ahead") return feed.diff + " points to upload";
+                    if (feed.state == "behind") return "Remote has newer data.";
+                    if (feed.state == "differs") return "Start time or interval differs from remote";
+                } else {
+                    if (this.downloading[tagname]) return "Downloading...";
+                    if (feed.state == "remote") return "Not on this device";
+                    if (feed.state == "same") return "Up to date";
+                    if (feed.state == "behind") return "Behind by " + feed.diff + " points";
+                    if (feed.state == "ahead") return "This device has newer data";
+                    if (feed.state == "differs") return "Start time or interval differs from this device";
+                }
+                return "";
+            },
+            show_download(feed) {
+                this.filter_text = feed.local.name;
+                this.set_tab("download");
+            },
             toggleTag(tag) {
                 this.expandedTags[tag] = !this.expandedTags[tag];
             },
             expand_all() {
                 var state = !this.all_expanded;
-                for (var tag in this.expandedTags) this.expandedTags[tag] = state;
+                for (var tag in this.view_tags) this.expandedTags[tag] = state;
             },
-            toggle_select(tagname) {
-                this.selected[tagname] = !this.selected[tagname];
-                this.prepare_selected();
+            select_all(state) {
+                for (var tagname of this.view_list) this.selected[tagname] = state;
             },
             tag_size(feeds) {
                 var size = 0;
-                for (var tagname in feeds) {
-                    var f = feeds[tagname];
-                    size += 1 * (f.button == 'Download' ? f.remote.size : f.local.size) || 0;
-                }
+                for (var tagname in feeds) size += 1 * this.side(feeds[tagname]).size || 0;
                 return size;
             },
             engine_badge(f) {
@@ -296,6 +415,7 @@
                     async: true,
                     success(result) {
                         if (result.success) {
+                            app.edit_remote = false;
                             remoteLoad();
                         } else {
                             app.alert = false;
@@ -308,13 +428,13 @@
             // ---------------------
             // Download feeds
             // ---------------------
-            download_all: function() {
-                feeds_to_download.forEach(function(tagname) {
+            download_list: function(list) {
+                list.forEach(function(tagname) {
                     app.download_feed(tagname);
                 });
             },
             download_feed: function(tagname) {
-                app.feeds[tagname].status = "Downloading...";
+                app.downloading[tagname] = true;
                 let f = app.feeds[tagname].remote;
                 var request = "name=" + f.name + "&tag=" + f.tag + "&remoteid=" + f.id + "&interval=" + f.interval + "&engine=" + f.engine;
                 $.ajax({
@@ -325,7 +445,7 @@
                     success(result) {
                         if (!result.success) {
                             alert(result.message);
-                            app.feeds[tagname].status = "";
+                            delete app.downloading[tagname];
                         }
                     }
                 });
@@ -333,22 +453,25 @@
             // ---------------------
             // Upload feeds
             // ---------------------
-            set_upload: function(tagname) {
+            set_upload: function(tagname, upload) {
+                app.feeds[tagname].upload = upload;
                 $.ajax({
                     url: path + "sync/upload",
                     data: {
                         localid: app.feeds[tagname].local.id,
-                        upload: app.feeds[tagname].upload*1
+                        upload: upload * 1
                     },
                     dataType: 'json',
                     async: true,
                     success(result) {
-                        if (!result.success) {
-                            alert(result.message);
-                            app.feeds[tagname].status = "";
-                        }
+                        if (!result.success) alert(result.message);
                     }
                 });
+            },
+            set_upload_selected: function(upload) {
+                for (var tagname of app.selected_list) {
+                    if (app.feeds[tagname].state != "behind") app.set_upload(tagname, upload);
+                }
             },
 
             toDate: function(value) {
@@ -416,59 +539,6 @@
                     }
                 });
             },
-            // Toggle upload
-            toggle_upload: function(tagname) {
-                if (app.feeds[tagname].button != 'Download') {
-                    app.feeds[tagname].upload = !app.feeds[tagname].upload;
-                    app.set_upload(tagname);
-                }
-            },
-
-            // Select & unselect all
-            select_all: function() {
-                for (var tagname in app.feeds) {
-                    app.selected[tagname] = true;
-                }
-                app.prepare_selected();
-            },
-            unselect_all: function() {
-                for (var tagname in app.feeds) {
-                    app.selected[tagname] = false;
-                }
-                app.prepare_selected();
-            },
-            select_change: function() {
-                app.prepare_selected();
-            },
-            prepare_selected: function() {
-                // Show upload and stop upload only when no selected feed is for download
-                var download = false;
-                var select_count = 0;
-                for (var tagname in app.selected) {
-                    if (app.selected[tagname]) {
-                        if (app.feeds[tagname].button == "Download") download = true;
-                        select_count++;
-                    }
-                }
-                app.show_upload_selected = !download && select_count > 0;
-                app.show_stop_upload_selected = !download && select_count > 0;
-            },
-            upload_selected: function() {
-                for (var tagname in app.selected) {
-                    if (app.selected[tagname]) {
-                        app.feeds[tagname].upload = true;
-                        app.set_upload(tagname);
-                    }
-                }
-            },
-            stop_upload_selected: function() {
-                for (var tagname in app.selected) {
-                    if (app.selected[tagname]) {
-                        app.feeds[tagname].upload = false;
-                        app.set_upload(tagname);
-                    }
-                }
-            },
             save_upload_interval: function() {
                 $.ajax({
                     url: path + "sync/save-upload-interval",
@@ -495,61 +565,32 @@
         }
     }).mount('#app');
 
-    // Sets location, status, state (row colour) and button per feed
+    // Sets state per feed: local, remote, same, ahead, behind or differs, and diff in points
     function process_feed_list(result) {
-
-        feeds_to_upload = [];
-        feeds_to_download = [];
-
         for (var tagname in result) {
             let f = result[tagname];
-            f.status = "";
-            f.state = "none";
-            f.location = "";
-            f.button = "";
+            f.diff = 0;
 
             if (f.local.exists && f.remote.exists) {
-                f.location = "Both";
+                f.state = "differs";
+                if (f.local.start_time != f.remote.start_time) continue;
+                if (f.local.engine == 5 && f.local.interval != f.remote.interval) continue;
 
-                if (f.local.start_time == f.remote.start_time) {
-
-                    if (f.local.engine == 5 && f.local.interval != f.remote.interval) continue;
-
-                    if (f.local.npoints > f.remote.npoints) {
-                        f.status = "Ahead of remote by " + (f.local.npoints - f.remote.npoints) + " points";
-                        f.state = "ahead";
-                        f.button = "Upload";
-                        feeds_to_upload.push(tagname);
-
-                    } else if (f.local.npoints < f.remote.npoints) {
-                        f.status = "Behind remote by " + (f.remote.npoints - f.local.npoints) + " points";
-                        f.state = "behind";
-                        f.button = "Download";
-                        feeds_to_download.push(tagname);
-
-                    } else {
-                        f.status = "Same as remote";
-                        f.state = "same";
-                    }
-                }
+                f.diff = Math.abs(f.local.npoints - f.remote.npoints);
+                if (f.local.npoints > f.remote.npoints) f.state = "ahead";
+                else if (f.local.npoints < f.remote.npoints) f.state = "behind";
+                else f.state = "same";
 
             } else if (f.remote.exists) {
-                f.location = "Remote";
-                f.button = "Download";
-                feeds_to_download.push(tagname);
-
+                f.state = "remote";
             } else {
-                f.location = "Local";
-                f.button = "Upload";
-                feeds_to_upload.push(tagname);
+                f.state = "local";
             }
         }
-
-        app.available_to_download_count = feeds_to_download.length;
         return result;
     }
 
-    // Fetch the feed list and group it by tag
+    // Fetch the feed list
     function syncList() {
         app.next_update_seconds = 10;
 
@@ -564,20 +605,17 @@
                 }
 
                 for (var tagname in result) {
-                    let tag = result[tagname].local.tag;
-                    if (app.expandedTags[tag] == undefined) app.expandedTags[tag] = true;
+                    let f = result[tagname];
+                    if (app.expandedTags[f.local.tag] == undefined) app.expandedTags[f.local.tag] = true;
                     if (app.selected[tagname] == undefined) app.selected[tagname] = false;
                 }
 
                 app.feeds = process_feed_list(result);
 
-                var feeds_by_tag = {};
-                for (var tagname in app.feeds) {
-                    var tag = app.feeds[tagname].local.tag;
-                    if (feeds_by_tag[tag] == undefined) feeds_by_tag[tag] = {};
-                    feeds_by_tag[tag][tagname] = app.feeds[tagname];
+                // Downloads end when the local feed catches up
+                for (var tagname in app.downloading) {
+                    if (app.feeds[tagname] && app.feeds[tagname].state == "same") delete app.downloading[tagname];
                 }
-                app.feeds_by_tag = feeds_by_tag;
 
                 app.alert = false;
             }
