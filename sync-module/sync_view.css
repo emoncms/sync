@@ -1,13 +1,7 @@
-/* Sync: panels and feed list on the page background, as feeds and graph */
-body { background-color: var(--bg-body); }
-[v-cloak] { display: none; }
-
-.sync-page { padding-bottom: 2rem; }
-.page-lead { margin: -4px 0 14px; color: var(--text-secondary); }
-
-.sync-page .panel { margin-bottom: 1rem; }
+/* Sync: panel-page from the theme, full width for the feed list */
+main.content-container:has(.sync-page) { max-width: none; }
 .sync-tabs { margin-bottom: 1rem; }
-.sync-note { color: var(--text-secondary); max-width: 760px; }
+.sync-note { color: var(--ec-text-secondary); max-width: 760px; }
 
 /* Remote server and upload service panels */
 .sync-page .panel-header { min-height: 44px; }
@@ -20,35 +14,9 @@ body { background-color: var(--bg-body); }
 .sync-radios label { display: flex; align-items: center; gap: 6px; margin: 0; }
 .sync-radios input { margin: 0; }
 .sync-buttons { display: flex; gap: 6px; }
-.sync-buttons .btn { margin: 0; }
 
 
-/* Toolbar, sticky under the top menu as on feeds */
-.sync-controls-sentinel { height: 0; visibility: hidden; }
-.sync-controls {
-    position: sticky;
-    top: var(--feed-top, 46px);
-    z-index: 100;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 0;
-    margin-bottom: 10px;
-    background: var(--bg-body);
-}
-.sync-controls .btn { margin: 0; }
-.sync-controls.is-sticky { background: transparent; }
-.sync-controls.is-sticky::before {
-    content: '';
-    position: fixed;
-    top: var(--feed-top, 46px);
-    left: 0;
-    width: 100vw;
-    height: 44px;
-    background: var(--bg-menu-top-active);
-    z-index: -1;
-}
+/* Toolbar: next update time and filter on the right */
 .sync-controls.is-sticky .sync-next { color: rgba(255, 255, 255, 0.8); }
 .sync-controls-right {
     display: flex;
@@ -56,8 +24,7 @@ body { background-color: var(--bg-body); }
     gap: 10px;
     margin-left: auto;
 }
-.sync-controls-right .form-control { margin: 0; }
-.sync-next { font-size: var(--font-sm); color: var(--text-secondary); }
+.sync-next { font-size: var(--font-sm); color: var(--ec-text-secondary); }
 
 /* Feed list, scrolls sideways when narrow: select, name, engine, size, status, upload switch or download button */
 .sync-list {
@@ -70,17 +37,16 @@ body { background-color: var(--bg-body); }
     grid-column: 1 / -1;
     grid-template-columns: subgrid;
     font-size: var(--font-2xs);
-    color: var(--text-secondary);
+    color: var(--ec-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
 .sync-list-head > div { padding: 0 10px 4px; }
 .sync-list-gap { grid-column: 1 / -1; height: 10px; }
 
-.sync-list .group-list-row .btn { margin: 0; }
 .sync-list .form-switch { display: inline-block; min-height: 0; margin: 0; }
 .sync-list .form-switch .form-check-input { margin: 0; cursor: pointer; }
-.sync-list .group-list-cell.sync-status { white-space: normal; color: var(--text-secondary); }
+.sync-list .group-list-cell.sync-status { white-space: normal; color: var(--ec-text-secondary); }
 
 /* Row state: status stripe and status text colour */
 .sync-list .sync-status a { margin-left: 4px; }

@@ -6,7 +6,7 @@
     $tab = ($route->subaction == "download") ? "download" : "upload";
 ?>
 
-<div class="sync-page">
+<div class="panel-page sync-page">
 <div class="page-header">
     <h3>Sync</h3>
 </div>
@@ -165,8 +165,8 @@
     <div class="alert alert-info" v-if="alert">{{ alert }}</div>
 
     <template v-if="Object.keys(feeds).length">
-    <div class="sync-controls-sentinel"></div>
-    <div class="controls sync-controls">
+    <div class="list-toolbar-sentinel"></div>
+    <div class="list-toolbar sync-controls">
         <button class="btn btn-default" :title="all_expanded ? 'Collapse' : 'Expand'" @click="expand_all"><i :class="all_expanded ? 'svg-icon-minimize-2' : 'svg-icon-expand'"></i></button>
         <button class="btn btn-default" :title="all_selected ? 'Unselect all' : 'Select all'" @click="select_all(!all_selected)">
             <i :class="all_selected ? 'svg-icon-ban-circle' : 'svg-icon-check'"></i> <span>{{ selected_list.length }}</span>
@@ -381,8 +381,8 @@
                 return size;
             },
             engine_badge(f) {
-                if (f.engine == 5) return '<span class="engine-badge engine-fixed">FIXED<span class="interval-sep"></span><span class="interval-tag">' + f.interval + 's</span></span>';
-                if (f.engine == 2) return '<span class="engine-badge engine-variable">VARIABLE</span>';
+                if (f.engine == 5) return '<span class="badge px-2 bg-info-subtle text-info-emphasis">FIXED<span class="interval-tag">' + f.interval + 's</span></span>';
+                if (f.engine == 2) return '<span class="badge px-2 bg-success-subtle text-success-emphasis">VARIABLE</span>';
                 return '';
             },
             // ---------------------
@@ -679,16 +679,6 @@
         });
     }
 
-    // Sticky toolbar: is-sticky when it scrolls behind the top menu
-    function watch_controls() {
-        var sentinel = document.querySelector('.sync-controls-sentinel');
-        if (!sentinel || !('IntersectionObserver' in window)) return;
-        new IntersectionObserver(function(entries) {
-            var controls = document.querySelector('.sync-controls');
-            if (controls) controls.classList.toggle('is-sticky', !entries[0].isIntersecting);
-        }, { rootMargin: '-46px 0px 0px 0px', threshold: 0 }).observe(sentinel);
-    }
-
     if (redis_enabled) {
         remoteLoad();
         app.is_service_running();
@@ -701,9 +691,10 @@
 
         // Toolbar is rendered once the feed list loads
         var controls_wait = setInterval(function() {
-            if (document.querySelector('.sync-controls-sentinel')) {
+            var sentinel = document.querySelector('.list-toolbar-sentinel');
+            if (sentinel) {
                 clearInterval(controls_wait);
-                watch_controls();
+                list_toolbar(sentinel, '.list-toolbar');
             }
         }, 500);
     }
