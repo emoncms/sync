@@ -287,7 +287,7 @@ class Sync
                     
                     $r->engine = isset($f->engine) ? $f->engine: '';
                     $r->start_time = isset($f->start_time) ? $f->start_time: ''; 
-                    $r->interval = isset($f->interval) ? $f->interval: ''; 
+                    $r->interval = isset($f->interval) ? (int) $f->interval: ''; 
                     $r->npoints = isset($f->npoints) ? $f->npoints: ''; 
                     $r->size = isset($f->size) ? $f->size: '';
                  

@@ -381,7 +381,7 @@
                 return size;
             },
             engine_badge(f) {
-                if (f.engine == 5) return '<span class="badge px-2 bg-info-subtle text-info-emphasis">FIXED<span class="interval-tag">' + f.interval + 's</span></span>';
+                if (f.engine == 5) return '<span class="badge px-2 bg-info-subtle text-info-emphasis">FIXED<span class="interval-tag">' + parseInt(f.interval) + 's</span></span>';
                 if (f.engine == 2) return '<span class="badge px-2 bg-success-subtle text-success-emphasis">VARIABLE</span>';
                 return '';
             },
