@@ -45,7 +45,9 @@ $last_upload_time = time();
 $feeds = $sync->get_feed_list($userid);
 if ((isset($feeds['success']) && $feeds['success']==false) || !is_array($feeds)) {
     print "Error: could not load feeds\n";
-    $feeds = array();
+    // Exit rather than run with an empty feed list, which would never
+    // upload anything; the service manager restarts the script
+    exit(1);
 }
 
 // ------------------------------------------------
@@ -92,7 +94,14 @@ while(true) {
             $upload_size = $r->upload_size;
         }
     
-        $feeds = $sync->get_feed_list($userid);
+        $result = $sync->get_feed_list($userid);
+        if ((isset($result['success']) && $result['success']==false) || !is_array($result)) {
+            // Keep the reload flag set so that the reload is retried
+            print "Error: could not reload feeds, retrying in 60s\n";
+            sleep(60);
+            continue;
+        }
+        $feeds = $result;
         
         $remote_id_map = array();
         foreach ($feeds as $tagname=>$f) {
